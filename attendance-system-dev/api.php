@@ -317,8 +317,8 @@ class AttendanceManager {
             
             return [
                 'success' => true,
-                'message' => $result['message'],
-                'record_id' => $result['record_id']
+                'message' => $result['message'] ?? 'Attendance marked',
+                'record_id' => $result['record_id'] ?? null
             ];
             
         } catch(PDOException $e) {
@@ -345,9 +345,9 @@ class AttendanceManager {
             
             return [
                 'success' => true,
-                'message' => $result['message'],
-                'work_hours' => $result['work_hours'],
-                'is_half_day' => $result['is_half_day']
+                'message' => $result['message'] ?? 'Checked out',
+                'work_hours' => $result['work_hours'] ?? null,
+                'is_half_day' => $result['is_half_day'] ?? null
             ];
             
         } catch(PDOException $e) {
@@ -374,10 +374,10 @@ class AttendanceManager {
                 $record = $stmt->fetch();
                 
                 // Parse JSON fields
-                if ($record['check_in_location']) {
+                if (!empty($record['check_in_location'])) {
                     $record['check_in_location'] = json_decode($record['check_in_location'], true);
                 }
-                if ($record['check_out_location']) {
+                if (!empty($record['check_out_location'])) {
                     $record['check_out_location'] = json_decode($record['check_out_location'], true);
                 }
                 
@@ -438,10 +438,10 @@ class AttendanceManager {
             
             // Parse JSON fields for each record
             foreach ($records as &$record) {
-                if ($record['check_in_location']) {
+                if (!empty($record['check_in_location'])) {
                     $record['check_in_location'] = json_decode($record['check_in_location'], true);
                 }
-                if ($record['check_out_location']) {
+                if (!empty($record['check_out_location'])) {
                     $record['check_out_location'] = json_decode($record['check_out_location'], true);
                 }
             }
@@ -499,7 +499,7 @@ class AttendanceManager {
                 'message' => 'Failed to fetch monthly statistics'
             ];
         }
-                                                                                    }
+    }
     
     public function checkWFHEligibility($employeeId, $date) {
         try {
@@ -543,18 +543,11 @@ class APIRouter {
         $method = $_SERVER['REQUEST_METHOD'];
         $path = $this->getPath();
 
+        // Call admin handler first — it will exit() if a match is found
+        $this->handleAdminRoutes($path, $method);
+
         try {
             switch ($path) {
-                case 'health':
-                    if ($method === 'GET') {
-                        http_response_code(200);
-                        echo json_encode(['success' => true, 'message' => 'API is up']);
-                        exit;
-                    } else {
-                        $this->methodNotAllowed();
-                    }
-                    break;
-
                 case 'login':
                     if ($method === 'POST') {
                         $this->handleLogin();
@@ -562,7 +555,7 @@ class APIRouter {
                         $this->methodNotAllowed();
                     }
                     break;
-
+                    
                 case 'register':
                     if ($method === 'POST') {
                         $this->handleRegister();
@@ -570,35 +563,31 @@ class APIRouter {
                         $this->methodNotAllowed();
                     }
                     break;
-
+                    
                 case 'offices':
-                case 'get-offices':
                     if ($method === 'GET') {
                         $this->handleGetOffices();
                     } else {
                         $this->methodNotAllowed();
                     }
                     break;
-
+                    
                 case 'check-location':
-                case 'check_location':
                     if ($method === 'POST') {
                         $this->handleCheckLocation();
                     } else {
                         $this->methodNotAllowed();
                     }
                     break;
-
+                    
                 case 'mark-attendance':
-                case 'mark_attendance':
                     if ($method === 'POST') {
                         $this->handleMarkAttendance();
                     } else {
                         $this->methodNotAllowed();
                     }
                     break;
-
-                case 'checkout':
+                    
                 case 'check-out':
                     if ($method === 'POST') {
                         $this->handleCheckOut();
@@ -606,45 +595,42 @@ class APIRouter {
                         $this->methodNotAllowed();
                     }
                     break;
-
+                    
                 case 'today-attendance':
-                case 'today_attendance':
                     if ($method === 'GET') {
                         $this->handleTodayAttendance();
                     } else {
                         $this->methodNotAllowed();
                     }
                     break;
-
+                    
                 case 'attendance-records':
-                case 'attendance_records':
                     if ($method === 'GET') {
                         $this->handleAttendanceRecords();
                     } else {
                         $this->methodNotAllowed();
                     }
                     break;
-
+                    
                 case 'monthly-stats':
-                case 'monthly_stats':
                     if ($method === 'GET') {
                         $this->handleMonthlyStats();
                     } else {
                         $this->methodNotAllowed();
                     }
                     break;
-
+                    
                 case 'wfh-eligibility':
-                case 'wfh_eligibility':
                     if ($method === 'GET') {
                         $this->handleWFHEligibility();
                     } else {
                         $this->methodNotAllowed();
                     }
                     break;
-
+                    
                 default:
                     $this->notFound();
+                    break;
             }
         } catch (Exception $e) {
             error_log("API Error: " . $e->getMessage());
@@ -652,18 +638,35 @@ class APIRouter {
         }
     }
     
-    private function getPath() {
-        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $uri = trim($uri, '/');
-        $parts = explode('/', $uri);
+        private function getPath() {
+            // If endpoint is provided as a query parameter (api.php?endpoint=xxx) use it
+            if (!empty($_GET['endpoint'])) {
+                // sanitize: keep only allowed chars (letters, numbers, dashes, underscores, slash)
+                $endpoint = trim($_GET['endpoint']);
+                // optionally normalize trailing slashes
+                $endpoint = trim($endpoint, "/ \t\n\r\0\x0B");
+                return $endpoint === '' ? 'index' : $endpoint;
+            }
         
-        // Remove 'api.php' if present
-        $parts = array_filter($parts, function($part) {
-            return $part !== 'api.php';
-        });
-        
-        return end($parts) ?: 'index';
-    }
+            // Otherwise, fall back to previous PATH_INFO / URI parsing logic
+            $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            $script = $_SERVER['SCRIPT_NAME'];
+            // remove script directory if present
+            $scriptDir = dirname($script);
+            if ($scriptDir && $scriptDir !== DIRECTORY_SEPARATOR) {
+                $uri = preg_replace('#' . preg_quote($scriptDir, '#') . '#', '', $uri, 1);
+            }
+            $uri = trim($uri, '/');
+            $parts = array_values(array_filter(explode('/', $uri), function($p){ return $p !== ''; }));
+            if (empty($parts)) return 'index';
+            // if the path includes the script filename, remove it
+            if (basename($script) === end($parts)) {
+                array_pop($parts);
+                if (empty($parts)) return 'index';
+            }
+            return end($parts);
+        }
+
     
     private function getJsonInput() {
         $input = file_get_contents('php://input');
@@ -673,9 +676,145 @@ class APIRouter {
             $this->badRequest('Invalid JSON input');
         }
         
-        return $data;
+        return $data ?: [];
     }
-    
+
+    // ================= Admin routes handler (class-scoped) =================
+    // This keeps admin endpoints inside the class scope and uses $this->db (PDO)
+    private function handleAdminRoutes($path, $method) {
+        // NOTE: Protect these endpoints in production (session/JWT & role check)
+        $pdo = $this->db;
+        if (!$pdo) return;
+
+        // GET /admin-users
+        if ($path === 'admin-users' && $method === 'GET') {
+            $stmt = $pdo->query("SELECT id, username, name, email, department, role, is_active FROM employees");
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['success' => true, 'users' => $users]);
+            exit;
+        }
+
+        // GET or POST /admin-user/{id}
+        if (preg_match('#^admin-user/([0-9]+)$#', $path, $m) && ($method === 'GET' || $method === 'POST')) {
+            $id = (int)$m[1];
+            if ($method === 'GET') {
+                $stmt = $pdo->prepare("SELECT id, username, name, email, department, role, is_active FROM employees WHERE id = ?");
+                $stmt->execute([$id]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                echo json_encode(['success' => true, 'user' => $user]);
+                exit;
+            } else {
+                $data = json_decode(file_get_contents('php://input'), true) ?: [];
+                $stmt = $pdo->prepare("UPDATE employees SET name = :name, role = :role WHERE id = :id");
+                $stmt->execute([':name' => $data['name'] ?? null, ':role' => $data['role'] ?? null, ':id' => $id]);
+                echo json_encode(['success' => true]);
+                exit;
+            }
+        }
+
+        // GET /offices-all
+        if ($path === 'offices-all' && $method === 'GET') {
+            $stmt = $pdo->query("SELECT id, name, address, latitude, longitude, radius_meters, is_active FROM office_locations");
+            $offices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['success' => true, 'offices' => $offices]);
+            exit;
+        }
+        // ---------------- Office CRUD for admin ----------------
+
+// Create new office
+if ($path === 'office' && $method === 'POST') {
+    $data = json_decode(file_get_contents('php://input'), true) ?: [];
+    $name = $data['name'] ?? null;
+    $address = $data['address'] ?? null;
+    $latitude = $data['latitude'] ?? null;
+    $longitude = $data['longitude'] ?? null;
+    $radius = $data['radius_meters'] ?? ($data['radius'] ?? null);
+    $is_active = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+
+    if (!$name) {
+        echo json_encode(['success' => false, 'message' => 'Office name is required']);
+        exit;
+    }
+
+    try {
+        $stmt = $this->db->prepare("INSERT INTO office_locations (name, address, latitude, longitude, radius_meters, is_active, created_at) VALUES (:name, :address, :latitude, :longitude, :radius, :is_active, NOW())");
+        $stmt->execute([
+            ':name' => $name,
+            ':address' => $address,
+            ':latitude' => $latitude,
+            ':longitude' => $longitude,
+            ':radius' => $radius,
+            ':is_active' => $is_active
+        ]);
+        echo json_encode(['success' => true, 'message' => 'Office created', 'office_id' => $this->db->lastInsertId()]);
+        exit;
+    } catch (PDOException $e) {
+        error_log("Create office error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Failed to create office']);
+        exit;
+    }
+}
+
+// Get single office by id (admin)
+if (preg_match('#^office/([0-9]+)$#', $path, $m) && $method === 'GET') {
+    $id = (int)$m[1];
+    try {
+        $stmt = $this->db->prepare("SELECT id, name, address, latitude, longitude, radius_meters, is_active FROM office_locations WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        $office = $stmt->fetch(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'office' => $office]);
+        exit;
+    } catch (PDOException $e) {
+        error_log("Get office error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Failed to fetch office']);
+        exit;
+    }
+}
+
+// Update office by id (admin)
+if (preg_match('#^office/([0-9]+)$#', $path, $m) && $method === 'POST') {
+    $id = (int)$m[1];
+    $data = json_decode(file_get_contents('php://input'), true) ?: [];
+    try {
+        $stmt = $this->db->prepare("UPDATE office_locations SET name = :name, address = :address, latitude = :latitude, longitude = :longitude, radius_meters = :radius, is_active = :is_active, updated_at = NOW() WHERE id = :id");
+        $stmt->execute([
+            ':name' => $data['name'] ?? null,
+            ':address' => $data['address'] ?? null,
+            ':latitude' => $data['latitude'] ?? null,
+            ':longitude' => $data['longitude'] ?? null,
+            ':radius' => $data['radius_meters'] ?? ($data['radius'] ?? null),
+            ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1,
+            ':id' => $id
+        ]);
+        echo json_encode(['success' => true, 'message' => 'Office updated']);
+        exit;
+    } catch (PDOException $e) {
+        error_log("Update office error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Failed to update office']);
+        exit;
+    }
+}
+
+// Delete office by id (admin)
+if (preg_match('#^office/([0-9]+)$#', $path, $m) && $method === 'DELETE') {
+    $id = (int)$m[1];
+    try {
+        $stmt = $this->db->prepare("DELETE FROM office_locations WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        echo json_encode(['success' => true, 'message' => 'Office deleted']);
+        exit;
+    } catch (PDOException $e) {
+        error_log("Delete office error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Failed to delete office']);
+        exit;
+    }
+}
+
+
+        // If not matched, return to routing (do nothing)
+    }
+
+    // ------------------ existing handlers (login/register/etc) ------------------
     private function handleLogin() {
         $data = $this->getJsonInput();
         

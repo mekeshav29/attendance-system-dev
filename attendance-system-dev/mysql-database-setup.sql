@@ -1,3 +1,4 @@
+-- Active: 1762093841339@@127.0.0.1@3306@attendance_system
 -- ===================================================
 -- Employee Attendance Management System Database
 -- MySQL Version with Enhanced Features
@@ -111,8 +112,8 @@ CREATE TABLE wfh_requests (
 
 -- Insert Office Locations
 INSERT INTO office_locations (id, name, address, latitude, longitude, radius_meters) VALUES
-('79', '79 Office', 'Sector 79, Mohali, Punjab, India', 30.680897, 76.718099, 50),
-('105', '105 Office', 'Sector 105, Mohali, Punjab, India', 30.655895, 76.682552, 50);
+('79', '79 Office', 'Sector 79, Mohali, Punjab, India', 30.680834, 76.717933, 50),
+('105', '105 Office', 'Sector 105, Mohali, Punjab, India', 30.655991, 76.682795, 50);
 
 -- Insert Department Office Access Rules
 INSERT INTO department_office_access (department, office_id) VALUES
@@ -194,7 +195,6 @@ GROUP BY employee_id, YEAR(date), MONTH(date);
 DELIMITER //
 
 -- Procedure: Get Accessible Offices for Department
-DROP PROCEDURE IF EXISTS GetAccessibleOffices //
 CREATE PROCEDURE GetAccessibleOffices(IN dept_name VARCHAR(20))
 BEGIN
     SELECT ol.id, ol.name, ol.address, ol.latitude, ol.longitude, ol.radius_meters
