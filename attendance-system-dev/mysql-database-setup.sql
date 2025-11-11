@@ -42,7 +42,7 @@ CREATE TABLE office_locations (
 -- ===================================================
 -- Department Office Access Table
 -- ===================================================
-CREATE TABLE department_office_access (
+CREATE TABLE department_office_access_igfk_1 (
     id INT AUTO_INCREMENT PRIMARY KEY,
     department ENUM('IT', 'HR', 'Surveyors', 'Accounts', 'Growth', 'Others') NOT NULL,
     office_id VARCHAR(10) NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE department_office_access (
 -- ===================================================
 -- Attendance Records Table
 -- ===================================================
-CREATE TABLE attendance_records (
+CREATE TABLE attendance_records_ibfk_2 (
     id INT AUTO_INCREMENT PRIMARY KEY,
     employee_id INT NOT NULL,
     date DATE NOT NULL,
@@ -111,27 +111,64 @@ CREATE TABLE wfh_requests (
 -- ===================================================
 
 -- Insert Office Locations
-INSERT INTO office_locations (id, name, address, latitude, longitude, radius_meters) VALUES
-('79', '79 Office', 'Sector 79, Mohali, Punjab, India', 30.680834, 76.717933, 50),
-('105', '105 Office', 'Sector 105, Mohali, Punjab, India', 30.655991, 76.682795, 50);
+CREATE TABLE office_locations (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    address TEXT NOT NULL,
+    latitude DECIMAL(10, 8) NOT NULL,
+    longitude DECIMAL(11, 8) NOT NULL,
+    radius_meters INT DEFAULT 50,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+INSERT INTO office_locations (id, name, address, latitude, longitude, radius_meters, is_active) VALUES
+(79,  '79 Office',  'Sector 79, Mohali, Punjab, India', 30.680834, 76.717933, 50, 1),
+(105, '105 Office', 'Sector 105, Mohali, Punjab, India', 30.655991, 76.682795, 50, 1);
+
 
 -- Insert Department Office Access Rules
-INSERT INTO department_office_access (department, office_id) VALUES
-('IT', '79'),
-('IT', '105'),
-('HR', '79'),
-('HR', '105'),
-('Surveyors', '79'),  -- Only 79 office
-('Accounts', '79'),
-('Accounts', '105'),
-('Growth', '79'),
-('Growth', '105'),
-('Others', '79'),
-('Others', '105');
+CREATE TABLE department_office_access (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    department ENUM('IT','HR','Surveyors','Accounts','Growth','Others') NOT NULL,
+    office_id INT UNSIGNED NOT NULL,
+    CONSTRAINT department_office_access_office_fk
+      FOREIGN KEY (office_id) REFERENCES office_locations(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_dept_office (department, office_id)
+);
+
+CREATE TABLE attendance_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+    date DATE NOT NULL,
+    check_in_time TIME NULL,
+    check_out_time TIME NULL,
+    type ENUM('office','wfh','client') NOT NULL,
+    status ENUM('present','half_day','wfh','client','absent') NOT NULL,
+    office_id INT UNSIGNED NULL,
+    check_in_location JSON NULL,
+    check_out_location JSON NULL,
+    check_in_photo LONGTEXT NULL,
+    check_out_photo LONGTEXT NULL,
+    total_hours DECIMAL(4,2) DEFAULT 0.00,
+    is_half_day BOOLEAN DEFAULT FALSE,
+    notes TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT attendance_records_employee_fk
+      FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+    CONSTRAINT attendance_records_office_fk
+      FOREIGN KEY (office_id) REFERENCES office_locations(id) ON DELETE SET NULL,
+    UNIQUE KEY unique_employee_date (employee_id, date),
+    INDEX idx_employee_date (employee_id, date),
+    INDEX idx_date (date),
+    INDEX idx_type (type),
+    INDEX idx_status (status)
+);
 
 -- Insert Default Admin User
 INSERT INTO employees (username, password, name, email, phone, department, primary_office, role) VALUES
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@company.com', '9999999999', 'IT', '79', 'admin');
+('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'HR', 'admin@company.com', '9999999999', 'IT', '79', 'admin');
 -- Password is: password
 
 -- Insert Sample Employees
@@ -337,3 +374,4 @@ SELECT 'Database setup completed successfully!' as status;
 SELECT COUNT(*) as total_employees FROM employees;
 SELECT COUNT(*) as total_offices FROM office_locations;
 SELECT COUNT(*) as sample_records FROM attendance_records;
+

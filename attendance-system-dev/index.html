@@ -2,9 +2,11 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Employee Attendance System - MySQL Powered</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
     <style>
         :root {
             --primary-color: #2563eb;
@@ -18,43 +20,45 @@
             --gray-500: #64748b;
             --gray-700: #334155;
             --gray-900: #0f172a;
-            --white: #ffffff;
+            --white: #fff
         }
 
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            box-sizing: border-box
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, var(--primary-color) 0%, #1e40af 100%);
             min-height: 100vh;
-            color: var(--gray-900);
+            color: var(--gray-900)
         }
 
         .screen {
-            display: none;
+            display: none
         }
 
         .screen.active {
-            display: block;
+            display: block
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 20px
         }
 
         .card {
             background: var(--white);
             border-radius: 16px;
             padding: 32px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, .1);
             margin-bottom: 24px;
             border: 1px solid var(--gray-200);
+            /* allow grid/flex children to shrink on small windows */
+            min-width: 0;
         }
 
         .login-container {
@@ -62,16 +66,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 20px
         }
 
         .login-card {
             background: var(--white);
             border-radius: 16px;
             padding: 40px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .25);
             width: 100%;
-            max-width: 400px;
+            max-width: 400px
         }
 
         .login-title {
@@ -79,17 +83,17 @@
             font-weight: 700;
             color: var(--gray-900);
             margin-bottom: 8px;
-            text-align: center;
+            text-align: center
         }
 
         .login-subtitle {
             color: var(--gray-500);
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 32px
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 20px
         }
 
         .form-label {
@@ -97,7 +101,7 @@
             margin-bottom: 8px;
             font-weight: 600;
             color: var(--gray-700);
-            font-size: 14px;
+            font-size: 14px
         }
 
         .form-control {
@@ -106,14 +110,14 @@
             border: 2px solid var(--gray-200);
             border-radius: 8px;
             font-size: 16px;
-            transition: all 0.2s ease;
-            background: var(--white);
+            transition: all .2s ease;
+            background: var(--white)
         }
 
         .form-control:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .1)
         }
 
         .btn {
@@ -127,39 +131,39 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all .2s ease;
             text-decoration: none;
-            min-height: 48px;
+            min-height: 48px
         }
 
         .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+            opacity: .6;
+            cursor: not-allowed
         }
 
         .btn-primary {
             background: var(--primary-color);
-            color: var(--white);
+            color: var(--white)
         }
 
         .btn-primary:hover:not(:disabled) {
             background: var(--primary-dark);
             transform: translateY(-1px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1)
         }
 
         .btn-secondary {
             background: var(--gray-500);
-            color: var(--white);
+            color: var(--white)
         }
 
         .btn-success {
             background: var(--success-color);
-            color: var(--white);
+            color: var(--white)
         }
 
         .btn-full-width {
-            width: 100%;
+            width: 100%
         }
 
         .signup-link,
@@ -167,14 +171,14 @@
             text-align: center;
             margin-top: 24px;
             padding-top: 24px;
-            border-top: 1px solid var(--gray-200);
+            border-top: 1px solid var(--gray-200)
         }
 
         .signup-link a,
         .login-link a {
             color: var(--primary-color);
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 600
         }
 
         .demo-credentials {
@@ -183,20 +187,20 @@
             padding: 16px;
             margin-top: 24px;
             text-align: center;
-            border: 1px solid var(--gray-200);
+            border: 1px solid var(--gray-200)
         }
 
         .demo-credentials h4 {
             font-size: 14px;
             font-weight: 600;
             color: var(--gray-700);
-            margin-bottom: 8px;
+            margin-bottom: 8px
         }
 
         .demo-credentials p {
             font-size: 14px;
             color: var(--gray-600);
-            margin: 4px 0;
+            margin: 4px 0
         }
 
         .header {
@@ -204,47 +208,47 @@
             border-radius: 16px;
             padding: 20px 32px;
             margin-bottom: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .1);
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: center
         }
 
         .header-title {
             font-size: 24px;
             font-weight: 700;
-            color: var(--gray-900);
+            color: var(--gray-900)
         }
 
         .header-user {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 16px
         }
 
         .user-welcome {
             font-weight: 600;
-            color: var(--gray-700);
+            color: var(--gray-700)
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 24px;
-            margin-bottom: 32px;
+            margin-bottom: 32px
         }
 
         .stat-card {
             background: var(--white);
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .1);
             border-left: 4px solid var(--primary-color);
-            transition: transform 0.2s ease;
+            transition: transform .2s ease
         }
 
         .stat-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-2px)
         }
 
         .stat-card-title {
@@ -252,88 +256,88 @@
             font-weight: 600;
             color: var(--gray-500);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 8px;
+            letter-spacing: .05em;
+            margin-bottom: 8px
         }
 
         .stat-card-value {
             font-size: 32px;
             font-weight: 700;
             color: var(--gray-900);
-            margin-bottom: 4px;
+            margin-bottom: 4px
         }
 
         .stat-card-value.success {
-            color: var(--success-color);
+            color: var(--success-color)
         }
 
         .stat-card-value.warning {
-            color: var(--warning-color);
+            color: var(--warning-color)
         }
 
         .stat-card-value.error {
-            color: var(--error-color);
+            color: var(--error-color)
         }
 
         .stat-card-timing {
             font-size: 14px;
-            color: var(--gray-500);
+            color: var(--gray-500)
         }
 
         .actions-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 24px;
-            margin-bottom: 32px;
+            margin-bottom: 32px
         }
 
         .action-card {
             background: var(--white);
             border-radius: 16px;
             padding: 32px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .1);
             border: 2px solid var(--gray-200);
             cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
+            transition: all .2s ease;
+            text-align: center
         }
 
         .action-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            border-color: var(--primary-color);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, .1);
+            border-color: var(--primary-color)
         }
 
         .action-card-icon {
             font-size: 48px;
             margin-bottom: 16px;
-            display: block;
+            display: block
         }
 
         .action-card-title {
             font-size: 20px;
             font-weight: 700;
             color: var(--gray-900);
-            margin-bottom: 8px;
+            margin-bottom: 8px
         }
 
         .action-card-description {
             color: var(--gray-500);
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.5
         }
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 16px
         }
 
         .office-selection {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
-            margin: 24px 0;
+            margin: 24px 0
         }
 
         .office-card {
@@ -342,34 +346,34 @@
             border-radius: 16px;
             padding: 24px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all .2s ease;
             text-align: center;
-            position: relative;
+            position: relative
         }
 
         .office-card:hover,
         .office-card.selected {
             border-color: var(--primary-color);
             background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
-            transform: translateY(-2px);
+            transform: translateY(-2px)
         }
 
         .office-card.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+            opacity: .5;
+            cursor: not-allowed
         }
 
         .office-card h3 {
             color: var(--gray-900);
             font-size: 20px;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 8px
         }
 
         .office-card p {
             color: var(--gray-600);
             font-size: 14px;
-            margin-bottom: 16px;
+            margin-bottom: 16px
         }
 
         .location-status {
@@ -378,27 +382,27 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
-            text-transform: uppercase;
+            text-transform: uppercase
         }
 
         .location-status.checking {
             background: var(--gray-100);
-            color: var(--gray-600);
+            color: #6b7280
         }
 
         .location-status.in-range {
             background: #dcfce7;
-            color: #166534;
+            color: #166534
         }
 
         .location-status.out-of-range {
             background: #fef3c7;
-            color: #92400e;
+            color: #92400e
         }
 
         .location-status.error {
             background: #fed7d7;
-            color: #742a2a;
+            color: #742a2a
         }
 
         .camera-container {
@@ -409,14 +413,14 @@
             border-radius: 12px;
             overflow: hidden;
             background: #000;
-            aspect-ratio: 4/3;
+            aspect-ratio: 4/3
         }
 
         .camera-container video,
         .camera-container img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: cover
         }
 
         .camera-controls {
@@ -424,7 +428,28 @@
             justify-content: center;
             gap: 12px;
             margin-top: 20px;
-            flex-wrap: wrap;
+            flex-wrap: wrap
+        }
+
+        /* --- Admin layout & tables: responsive fixes --- */
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px
+        }
+
+        @media (max-width:1200px) {
+            .admin-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .table-wrap {
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px
         }
 
         .records-table {
@@ -433,7 +458,8 @@
             background: var(--white);
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .1);
+            min-width: 860px
         }
 
         .records-table th,
@@ -441,17 +467,32 @@
             padding: 16px;
             text-align: left;
             border-bottom: 1px solid var(--gray-200);
+            vertical-align: top;
+            white-space: nowrap
         }
 
         .records-table th {
             background: var(--gray-50);
             font-weight: 600;
             color: var(--gray-700);
-            font-size: 14px;
+            font-size: 14px
         }
 
         .records-table tr:hover {
-            background: var(--gray-50);
+            background: var(--gray-50)
+        }
+
+        @media (max-width:900px) {
+
+            .records-table th:nth-child(2),
+            .records-table td:nth-child(2),
+            .records-table th:nth-child(3),
+            .records-table td:nth-child(3),
+            .records-table th:nth-child(4),
+            .records-table td:nth-child(4) {
+                white-space: normal;
+                word-break: break-word
+            }
         }
 
         .status-badge {
@@ -459,27 +500,27 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
-            text-transform: uppercase;
+            text-transform: uppercase
         }
 
         .status-present {
             background: #dcfce7;
-            color: #166534;
+            color: #166534
         }
 
         .status-wfh {
             background: #dbeafe;
-            color: #1e40af;
+            color: #1e40af
         }
 
         .status-half_day {
             background: #fef3c7;
-            color: #92400e;
+            color: #92400e
         }
 
         .status-client {
             background: #e0e7ff;
-            color: #3730a3;
+            color: #3730a3
         }
 
         .notification {
@@ -492,46 +533,46 @@
             font-weight: 600;
             z-index: 1000;
             transform: translateX(400px);
-            transition: transform 0.3s ease;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transition: transform .3s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1)
         }
 
         .notification.show {
-            transform: translateX(0);
+            transform: translateX(0)
         }
 
         .notification.success {
-            background: var(--success-color);
+            background: var(--success-color)
         }
 
         .notification.error {
-            background: var(--error-color);
+            background: var(--error-color)
         }
 
         .notification.warning {
-            background: var(--warning-color);
+            background: var(--warning-color)
         }
 
         .hidden {
-            display: none !important;
+            display: none !important
         }
 
         .text-center {
-            text-align: center;
+            text-align: center
         }
 
         .modal {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, .5);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 1000
         }
 
         .modal.active {
-            display: flex;
+            display: flex
         }
 
         .modal-content {
@@ -542,7 +583,7 @@
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, .25)
         }
 
         .loading-spinner {
@@ -551,46 +592,47 @@
             border: 2px solid transparent;
             border-top: 2px solid currentColor;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite
         }
 
         @keyframes spin {
             to {
-                transform: rotate(360deg);
+                transform: rotate(360deg)
             }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width:768px) {
             .form-row {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr
             }
 
             .stats-grid,
             .actions-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr
             }
 
             .header {
                 flex-direction: column;
                 gap: 16px;
-                text-align: center;
+                text-align: center
             }
 
             .container {
-                padding: 12px;
+                padding: 12px
             }
 
             .office-selection {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr
             }
 
             .camera-controls {
                 flex-direction: column;
-                align-items: center;
+                align-items: center
             }
         }
     </style>
 </head>
+
 
 <body>
     <!-- Login Screen -->
@@ -623,11 +665,11 @@
                     <p>New employee? <a href="#" onclick="showScreen('signupScreen')">Sign up here</a></p>
                 </div>
 
-                <div class="demo-credentials">
+                <!-- <div class="demo-credentials">
                     <h4>Demo Credentials</h4>
                     <p><strong>Admin:</strong> admin / password</p>
                     <p><strong>Employee:</strong> john.doe / password</p>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -762,6 +804,11 @@
                     <div class="action-card-title">Admin Panel</div>
                     <div class="action-card-description">Add/Edit Users/Offices (Admin only)</div>
                 </div>
+                <div class="action-card hidden" onclick="openProfile()" id="profileCard">
+                    <span class="action-card-icon">🧑‍💻</span>
+                    <div class="action-card-title">Edit Your Details</div>
+                    <div class="action-card-description">Update your name, email, phone, password</div>
+                </div>
                 <div class="action-card" onclick="exportToExcel()" id="exportCard">
                     <span class="action-card-icon">📊</span>
                     <div class="action-card-title">Export Attendance</div>
@@ -770,6 +817,53 @@
             </div>
         </div>
     </div>
+
+    <!-- Profile Screen (for employees) -->
+    <div id="profileScreen" class="screen">
+        <div class="container">
+            <div class="header">
+                <div class="header-title">Edit Your Details</div>
+                <button onclick="showScreen('dashboardScreen')" class="btn btn-secondary">← Back</button>
+            </div>
+
+            <div class="card" style="max-width:700px; margin:0 auto;">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input id="profileName" class="form-control" placeholder="Your name">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input id="profileEmail" class="form-control" placeholder="you@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Mobile</label>
+                    <input id="profilePhone" class="form-control" placeholder="10-digit number">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Department</label>
+                    <input id="profileDepartment" class="form-control" disabled>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Change Password (optional)</label>
+                    <input id="profilePassword" type="password" class="form-control"
+                        placeholder="Leave blank to keep current">
+                </div>
+
+                <div class="text-center" style="margin-top:12px;">
+                    <button class="btn btn-primary" onclick="saveProfile()">
+                        <span id="profileSaveText">Save Changes</span>
+                        <span id="profileSaveSpinner" class="loading-spinner hidden"></span>
+                    </button>
+                </div>
+                <div id="profileMsg" style="margin-top:8px;color:var(--gray-700);font-size:13px;"></div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Attendance Screen -->
     <div id="attendanceScreen" class="screen">
@@ -785,13 +879,15 @@
                     <h3>Select Attendance Type:</h3>
                     <div class="office-selection" id="typeSelection">
                         <!-- inside the WFH card -->
-                        <div class="office-card" onclick="selectType('wfh', event)" id="wfhOption">
+                        <div class="office-card" onclick="onWFHCardClick(event)" id="wfhOption">
+
                             <span class="action-card-icon">🏠</span>
                             <h3>Work From Home</h3>
                             <p id="wfhStatus">Checking availability...</p>
 
                             <!-- add this line -->
-                            <button id="wfhRequestBtn" class="btn btn-secondary" style="display:none; margin-top:8px;"
+                            <button id="wfhRequestBtn" class="btn btn-secondary"
+                                style="display:none; margin-top:8px; background-color: #1d4ed8;"
                                 onclick="requestWFHExtension(event)">Request WFH</button>
                         </div>
 
@@ -888,7 +984,7 @@
                 </div>
             </div>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
+            <div class="admin-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;">
                 <!-- Add Office -->
                 <div class="card">
                     <h3 style="margin-bottom:12px;">Add New Office</h3>
@@ -984,17 +1080,18 @@
             </div>
 
             <!-- Lists -->
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div style="display:grid; grid-template-columns:1fr; gap:20px; width: auto">
                 <div class="card">
-                    <h3>Offices <small id="officeCount" style="color:var(--gray-500); font-size:14px;"></small></h3>
+                    <h3>Offices <small id="officeCount" style="color:var(--gray-500); font-size:10px;"></small></h3>
                     <div id="adminOfficesList" style="margin-top:12px;"></div>
                 </div>
 
                 <div class="card">
-                    <h3>Users Management <small id="userCount" style="color:var(--gray-500); font-size:14px;"></small>
+                    <h3>Users Management <small id="userCount" style="color:var(--gray-500); font-size:10px;"></small>
                     </h3>
-                    <div id="adminUsersListWrapper" style="margin-top:12px; overflow:auto; max-height:420px;">
-                        <table id="adminUsersTable" class="records-table" style="width:100%;">
+                    <div class="table-wrap" id="adminUsersListWrapper"
+                        style="margin-top:12px;max-height:420px;overflow:auto;">
+                        <table id="adminUsersTable" class="records-table">
                             <thead>
                                 <tr>
                                     <th style="width:60px">ID</th>
@@ -1010,6 +1107,7 @@
                         </table>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -1060,14 +1158,15 @@
         let capturedPhotoData = null;
         let stream = null;
         let accessibleOffices = [];
+        let editingUserId = null;
 
         // API Configuration
-        const API_BASE_URL = `http://localhost/New%20folder/attendance-system-dev/api.php`;
+        const apiBaseUrl = "./api.php";
 
         // Initialize Application
         document.addEventListener('DOMContentLoaded', function () {
             console.log('MySQL Attendance System Initializing...');
-
+            refreshPrimaryOfficeSelects();
             // Check for stored user session
             const storedUser = localStorage.getItem('attendanceUser');
             if (storedUser) {
@@ -1080,21 +1179,99 @@
                 }
             }
         });
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // optional: click backdrop to close
+        document.addEventListener('click', (e) => {
+            const modal = e.target.closest('.modal');
+            if (modal && e.target === modal) closeModal(modal.id);
+        });
+
+        // optional: ESC key closes active modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(m => closeModal(m.id));
+            }
+        });
 
         // Utility Functions
+        function resetAttendanceFlow() {
+            // clear selections/state
+            selectedOffice = null;
+            selectedType = null;
+            capturedPhotoData = null;
+
+            // stop any running camera stream
+            try {
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop());
+                    stream = null;
+                }
+            } catch { }
+
+            // reset camera UI
+            const video = document.getElementById('video');
+            const img = document.getElementById('capturedPhoto');
+            const placeholder = document.getElementById('cameraPlaceholder');
+
+            if (video) { video.srcObject = null; video.style.display = 'none'; }
+            if (img) { img.src = ''; img.style.display = 'none'; }
+            if (placeholder) { placeholder.style.display = 'flex'; }
+
+            const startBtn = document.getElementById('startCameraBtn');
+            const captureBtn = document.getElementById('captureBtn');
+            const retakeBtn = document.getElementById('retakeBtn');
+            const markBtn = document.getElementById('markBtn');
+
+            if (startBtn) startBtn.style.display = 'inline-block';
+            if (captureBtn) captureBtn.style.display = 'none';
+            if (retakeBtn) retakeBtn.style.display = 'none';
+            if (markBtn) markBtn.style.display = 'none';
+
+            // reset cards selection
+            document.querySelectorAll('#typeSelection .office-card, #officeSelection .office-card')
+                .forEach(el => el.classList.remove('selected'));
+
+            // show type choices, hide office list & camera until a type is picked
+            const typeSection = document.getElementById('typeSelectionSection');
+            const officeBlock = document.getElementById('officeBlock');
+            const cameraSection = document.getElementById('cameraSection');
+
+            if (typeSection) typeSection.classList.remove('hidden');
+            if (officeBlock) officeBlock.style.display = 'none';
+            if (cameraSection) cameraSection.classList.add('hidden');
+        }
+
         function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
+            // Prevent non-admins from opening adminScreen
+            if (screenId === 'adminScreen' && (!currentUser || currentUser.role !== 'admin')) {
+                showNotification('Admins only.', 'warning');
+                screenId = 'dashboardScreen';
+            }
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
 
-            // Screen-specific initialization
             if (screenId === 'recordsScreen') {
                 loadAttendanceRecords();
             } else if (screenId === 'attendanceScreen') {
-                resetAttendanceFlow();
+                // avoid reference error if you removed resetAttendanceFlow
+                if (typeof resetAttendanceFlow === 'function') resetAttendanceFlow();
             }
         }
+
 
         function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
@@ -1108,7 +1285,7 @@
         }
 
         function formatTime(date) {
-            return date.toTimeString().split(' ')[0].substring(0, 5);
+            return date.toTimeString().split(' ')[0];
         }
 
         function getCurrentDateTime() {
@@ -1118,15 +1295,29 @@
                 time: formatTime(now)
             };
         }
-        const apiBaseUrl = (function () {
 
-            return './api.php';
-        })();
+        // Haversine distance in METERS
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const toRad = (v) => (v * Math.PI) / 180;
+            const R = 6371000; // Earth radius (m)
+
+            const dLat = toRad(lat2 - lat1);
+            const dLng = toRad(lng2 - lng1);
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+
         // API Functions
         // Robust apiCall: uses query-style endpoint: /api.php?endpoint=attendance-records
         async function apiCall(path, method = 'GET', data = null) {
             method = (method || 'GET').toUpperCase();
-            let url = apiBaseUrl + '?endpoint=' + encodeURIComponent(path);
+            let url = apiBaseUrl + '?endpoint=' + encodeURI(path);
 
             if (method === 'GET' && data && typeof data === 'object') {
                 const qs = Object.keys(data).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(data[k])).join('&');
@@ -1134,16 +1325,18 @@
             }
 
             const opts = { method, headers: {} };
+            // 👇 add both lines
+            opts.cache = 'no-store';
+            opts.headers['Cache-Control'] = 'no-cache';
+
             if (method !== 'GET' && data !== null) {
                 opts.headers['Content-Type'] = 'application/json';
                 opts.body = JSON.stringify(data);
             }
 
-            try {
-                const res = await fetch(url, opts);
-                const text = await res.text();
-                try { return JSON.parse(text); } catch (e) { console.error('Non-JSON response', url, text); return { success: false, raw: text, status: res.status }; }
-            } catch (err) { console.error('Fetch error', err); return { success: false, message: 'Network error', error: err }; }
+            const res = await fetch(url, opts);
+            const text = await res.text();
+            try { return JSON.parse(text); } catch { return { success: false, raw: text, status: res.status }; }
         }
 
 
@@ -1181,6 +1374,7 @@
                     showNotification('Login successful!');
                     showScreen('dashboardScreen');
                     await loadDashboardData();
+                    await populateOfficeDropdowns();
                 } else {
                     showNotification(result.message || 'Login failed', 'error');
                 }
@@ -1250,13 +1444,20 @@
 
             document.getElementById('userName').textContent = currentUser.name;
 
-            // Show admin features for admin users
             if (currentUser.role === 'admin') {
+                // Admin sees Admin panel card + Export
                 document.getElementById('adminCard').classList.remove('hidden');
-                document.getElementById('adminExportNote').classList.remove('hidden');
+                document.getElementById('exportCard').classList.remove('hidden');
+                document.getElementById('profileCard').classList.add('hidden');
+                document.getElementById('adminExportNote')?.classList.remove('hidden');
+            } else {
+                // Employee sees Profile card; Admin panel + Export hidden
+                document.getElementById('profileCard').classList.remove('hidden');
+                document.getElementById('adminCard').classList.add('hidden');
+                document.getElementById('exportCard').classList.add('hidden');
+                document.getElementById('adminExportNote')?.classList.add('hidden');
             }
 
-            // Load data in parallel
             await Promise.all([
                 loadTodayAttendance(),
                 loadMonthlyStats(),
@@ -1264,6 +1465,7 @@
                 updateLocationStatus()
             ]);
         }
+
 
         async function loadTodayAttendance() {
             try {
@@ -1344,7 +1546,6 @@
             }
         }
 
-        // If your code calls updateLocationStatus(), forward it to checkAndUpdateLocationStatus()
         async function updateLocationStatus() {
             if (typeof checkAndUpdateLocationStatus === 'function') {
                 return await checkAndUpdateLocationStatus();
@@ -1353,54 +1554,92 @@
         }
 
 
+        // Computes "Location Status" on the dashboard and updates the UI
+        async function checkAndUpdateLocationStatus() {
+            const statusEl = document.getElementById('locationStatus');
+            const distEl = document.getElementById('locationDistance');
 
-        // Replace these functions in your script with the versions below.
+            // Helper to render a retry link
+            const showRetry = (msg, css = 'warning') => {
+                statusEl.textContent = msg;
+                statusEl.className = 'stat-card-value ' + css;
+                distEl.innerHTML = `<a href="#" id="retryGeo" style="text-decoration:underline;">Retry location</a>`;
+                const a = document.getElementById('retryGeo');
+                if (a) a.onclick = (e) => { e.preventDefault(); checkAndUpdateLocationStatus(); };
+            };
 
-        /* ===== loadOfficeSelection ===== */
-        async function loadOfficeSelection() {
+            // Start state
+            statusEl.textContent = 'Checking...';
+            statusEl.className = 'stat-card-value';
+            distEl.textContent = '';
+
+            // 1) Load offices (so we can compute distance)
+            let offices = [];
             try {
-                const result = await apiCall('offices', 'GET', {
-                    department: currentUser.department
+                const res = await apiCall('offices', 'GET', { active: 1, department: currentUser.department });
+                offices = (res && res.success && Array.isArray(res.offices)) ? res.offices : [];
+            } catch { }
+            if (offices.length === 0) {
+                statusEl.textContent = 'No offices';
+                statusEl.className = 'stat-card-value warning';
+                distEl.textContent = '';
+                return;
+            }
+
+            // 2) Geolocation capability?
+            if (!('geolocation' in navigator)) {
+                showRetry('Location unavailable in this browser', 'warning');
+                distEl.textContent = 'Use localhost/https and allow location';
+                return;
+            }
+
+            // 3) Try to get position with good timeouts
+            try {
+                const pos = await new Promise((resolve, reject) => {
+                    let settled = false;
+                    const guard = setTimeout(() => { if (!settled) { settled = true; reject(Object.assign(new Error('timeout'), { code: 3 })); } }, 8000);
+                    navigator.geolocation.getCurrentPosition(
+                        (p) => { if (!settled) { settled = true; clearTimeout(guard); resolve(p); } },
+                        (err) => { if (!settled) { settled = true; clearTimeout(guard); reject(err); } },
+                        { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 }
+                    );
                 });
 
-                if (!result.success) {
-                    showNotification('Failed to load office information', 'error');
+                const { latitude: lat, longitude: lng } = pos.coords;
+
+                // 4) Compute nearest office
+                let nearest = { d: Infinity, office: null };
+                for (const o of offices) {
+                    const d = calculateDistance(lat, lng, parseFloat(o.latitude), parseFloat(o.longitude));
+                    if (d < nearest.d) nearest = { d, office: o };
+                }
+
+                if (!nearest.office) {
+                    statusEl.textContent = 'No offices';
+                    statusEl.className = 'stat-card-value warning';
+                    distEl.textContent = '';
                     return;
                 }
 
-                accessibleOffices = result.offices;
-                const container = document.getElementById('officeSelection');
-
-                if (accessibleOffices.length === 0) {
-                    container.innerHTML = '<p>No offices accessible for your department.</p>';
-                    return;
-                }
-
-                container.innerHTML = '';
-
-                // Try to get user location to show distances, but render cards even if location fails.
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        async (position) => {
-                            await renderOfficeCards(position.coords.latitude, position.coords.longitude);
-                        },
-                        () => {
-                            // Render without precise distances / location check
-                            renderOfficeCardsWithoutLocation();
-                        },
-                        { timeout: 5000 }
-                    );
+                const inRange = nearest.d <= (nearest.office.radius_meters || 0);
+                statusEl.textContent = inRange ? 'In Office Range' : 'Out of Range';
+                statusEl.className = 'stat-card-value ' + (inRange ? 'success' : 'warning');
+                distEl.textContent = `${nearest.office.name} • ${Math.round(nearest.d)} m`;
+            } catch (err) {
+                // Differentiate errors
+                if (err && err.code === 1) {            // PERMISSION_DENIED
+                    showRetry('Location permission denied', 'error');
+                    distEl.textContent = 'Allow location for this site, then retry';
+                } else if (err && err.code === 2) {     // POSITION_UNAVAILABLE
+                    showRetry('Location unavailable', 'warning');
+                    distEl.textContent = 'Try moving or check GPS/network';
+                } else if (err && err.code === 3) {     // TIMEOUT
+                    showRetry('Location timed out', 'warning');
+                    distEl.textContent = 'Retry; go near a window';
                 } else {
-                    renderOfficeCardsWithoutLocation();
+                    showRetry('Location error', 'warning');
+                    distEl.textContent = 'Retry or check permissions';
                 }
-
-                // Ensure the Type selection (including WFH) is visible even BEFORE an office is selected
-                // so users can choose WFH directly. We will keep it hidden visually until after the
-                // user clicks a card to preserve UI flow, but we will not block WFH selection in code.
-                document.getElementById('typeSelectionSection').classList.add('hidden');
-            } catch (error) {
-                showNotification('Error loading offices', 'error');
-                console.error('Error:', error);
             }
         }
 
@@ -1535,94 +1774,136 @@
             showScreen('attendanceScreen');
             if (typeof resetAttendanceFlow === 'function') resetAttendanceFlow();
 
+            accessibleOffices = [];
+
             // show three choices first
             document.getElementById('typeSelectionSection').classList.remove('hidden');
             const officeBlock = document.getElementById('officeBlock');
             if (officeBlock) officeBlock.style.display = 'none';
             document.getElementById('cameraSection').classList.add('hidden');
 
-            // preload offices + compute if user is inside any geofence (to toggle WFH)
-            try {
-                await loadOfficesForProximity();
-            } catch (e) {
-                console.warn('Proximity preload failed:', e);
-                updateWFHOption({ inAnyOfficeRange: false, checked: false });
-            }
+            await refreshWFHAvailability();
         }
 
-        /* Preload offices & compute geofence membership (for WFH availability) */
-        async function loadOfficesForProximity() {
-            if (!currentUser) return;
+        /* ---------------- WFH availability: no more “stuck checking” ---------------- */
 
-            const res = await apiCall('offices', 'GET', { department: currentUser.department });
-            accessibleOffices = (res && res.success && Array.isArray(res.offices)) ? res.offices : [];
-
-            if (!navigator.geolocation) {
-                updateWFHOption({ inAnyOfficeRange: false, checked: false });
-                return;
-            }
-
-            return new Promise((resolve) => {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    const lat = pos.coords.latitude, lng = pos.coords.longitude;
-                    let inAny = false;
-                    for (const o of accessibleOffices) {
-                        const d = calculateDistance(lat, lng, parseFloat(o.latitude), parseFloat(o.longitude));
-                        if (d <= (o.radius_meters || 0)) { inAny = true; break; }
-                    }
-                    updateWFHOption({ inAnyOfficeRange: inAny, checked: true });
-                    resolve();
-                }, () => {
-                    updateWFHOption({ inAnyOfficeRange: false, checked: false });
-                    resolve();
-                }, { timeout: 6000 });
-            });
-        }
-
-        /* Update WFH card: disable if inside office geofence; show Request button if monthly limit reached */
-        function updateWFHOption(state = { inAnyOfficeRange: false, checked: false }) {
+        async function refreshWFHAvailability() {
             const wfhOption = document.getElementById('wfhOption');
             const wfhStatus = document.getElementById('wfhStatus');
-            const wfhRequestBtn = document.getElementById('wfhRequestBtn');
+            const requestBtn = document.getElementById('wfhRequestBtn');
 
-            // default hide Request button
-            if (wfhRequestBtn) wfhRequestBtn.style.display = 'none';
+            // Always start from a determinate UI state
+            wfhStatus.textContent = 'Checking availability...';
+            wfhStatus.style.color = 'var(--gray-600)';
+            wfhOption.classList.remove('disabled');
+            if (requestBtn) requestBtn.style.display = 'none';
 
-            // also check server monthly limit (non-blocking)
-            apiCall('wfh-eligibility', 'GET', {
-                employee_id: currentUser.id,
-                date: getCurrentDateTime().date
-            }).then(result => {
-                if (result && typeof result.current_count === 'number') {
-                    // if limit reached, offer request button
-                    if (result.max_limit && result.current_count >= result.max_limit) {
-                        if (wfhRequestBtn) wfhRequestBtn.style.display = 'inline-flex';
+            // ---------- 1) Get offices (for geofence check) ----------
+            let offices = [];
+            try {
+                const res = await apiCall('offices', 'GET', { active: 1, department: currentUser.department });
+                offices = (res && res.success && Array.isArray(res.offices)) ? res.offices : [];
+            } catch (e) {
+                // ignore; we’ll proceed with unknown geofence
+            }
+
+            // ---------- 2) Check geofence with a timeout (never hang) ----------
+            let inAnyOffice = false;    // default
+            let geoChecked = false;
+
+            if (navigator.geolocation && offices.length > 0) {
+                try {
+                    const pos = await new Promise((resolve, reject) => {
+                        let settled = false;
+                        const guard = setTimeout(() => { if (!settled) { settled = true; reject(new Error('timeout')); } }, 5000);
+                        navigator.geolocation.getCurrentPosition(
+                            (p) => { if (!settled) { settled = true; clearTimeout(guard); resolve(p); } },
+                            (e) => { if (!settled) { settled = true; clearTimeout(guard); reject(e); } },
+                            { enableHighAccuracy: false, timeout: 4500, maximumAge: 60000 }
+                        );
+                    });
+                    const { latitude, longitude } = pos.coords;
+                    for (const o of offices) {
+                        const d = calculateDistance(latitude, longitude, parseFloat(o.latitude), parseFloat(o.longitude));
+                        if (d <= (o.radius_meters || 0)) { inAnyOffice = true; break; }
                     }
+                    geoChecked = true;
+                } catch {
+                    geoChecked = false; // user denied or timeout → treat as unknown but do not block
                 }
-            }).catch(() => { });
+            }
 
-            if (!state.checked) {
-                // could not get location -> allow WFH but mark unknown
+            // Apply geofence result now (so UI updates even if server call fails)
+            if (geoChecked && inAnyOffice) {
+                // inside office → WFH disabled regardless of monthly limit
+                wfhOption.classList.add('disabled');
+                wfhStatus.textContent = 'WFH not allowed while at office';
+                wfhStatus.style.color = 'var(--error-color)';
+                if (requestBtn) requestBtn.style.display = 'none';
+                return; // we can stop here (limit doesn’t matter when inside office)
+            } else if (!geoChecked) {
+                // location unknown → allow WFH but label appropriately
                 wfhOption.classList.remove('disabled');
                 wfhStatus.textContent = 'Availability unknown (no location)';
                 wfhStatus.style.color = 'var(--warning-color)';
-                return;
+            } else {
+                // outside any office → tentatively available, refine with server limit next
+                wfhOption.classList.remove('disabled');
+                wfhStatus.textContent = 'Checking monthly limit...';
+                wfhStatus.style.color = 'var(--gray-600)';
             }
 
-            if (state.inAnyOfficeRange) {
-                // inside geofence -> WFH disabled
-                wfhOption.classList.add('disabled');
-                wfhStatus.textContent = 'Not allowed while at office';
-                wfhStatus.style.color = 'var(--error-color)';
-            } else {
-                // outside geofence -> WFH allowed (server still enforces monthly limit on submit)
-                wfhOption.classList.remove('disabled');
+            // ---------- 3) Check monthly WFH limit from server ----------
+            try {
+                const today = getCurrentDateTime().date;
+                const r = await apiCall('wfh-eligibility', 'GET', { employee_id: currentUser.id, date: today });
+
+                // Expected shape: { current_count, max_limit, can_request }
+                if (r && typeof r.current_count === 'number' && typeof r.max_limit !== 'undefined') {
+                    if (r.current_count >= r.max_limit || r.can_request === false) {
+                        // limit reached → show request button
+                        wfhStatus.textContent = `Limit reached (${r.current_count}/${r.max_limit})`;
+                        wfhStatus.style.color = 'var(--error-color)';
+                        if (!wfhOption.classList.contains('disabled')) wfhOption.classList.add('disabled'); // keep it disabled
+                        if (requestBtn) requestBtn.style.display = 'inline-flex';
+                        return;
+                    } else {
+                        // still has quota
+                        wfhStatus.textContent = `Available (${r.current_count}/${r.max_limit})`;
+                        wfhStatus.style.color = 'var(--success-color)';
+                        if (requestBtn) requestBtn.style.display = 'none';
+                        return;
+                    }
+                }
+
+                // If server didn’t return expected shape, fall back to available
                 wfhStatus.textContent = 'Available';
+                wfhStatus.style.color = 'var(--success-color)';
+            } catch {
+                // Server error → keep it available, don’t hang
+                wfhStatus.textContent = 'Available (limit unknown)';
                 wfhStatus.style.color = 'var(--success-color)';
             }
         }
 
-        /* Optional: send a WFH extension request to Admin/HR (email fallback if no API) */
+        /* Tapping the WFH card rechecks availability (and can reveal the Request button immediately) */
+        function onWFHCardClick(e) {
+            e && e.stopPropagation && e.stopPropagation();
+            // If it looks disabled already (inside geofence), show a message and do nothing.
+            const wfhOption = document.getElementById('wfhOption');
+            if (wfhOption.classList.contains('disabled')) {
+                showNotification('WFH not available right now.', 'warning');
+                return;
+            }
+            // Refresh once more (fast) so the Request button can appear if quota just reached.
+            refreshWFHAvailability().then(() => {
+                // If still enabled after refresh, proceed to select type and open camera.
+                const disabled = document.getElementById('wfhOption').classList.contains('disabled');
+                if (!disabled) selectType('wfh', e);
+            });
+        }
+
+        /* Request WFH fallback (API first, mailto fallback) */
         async function requestWFHExtension(ev) {
             ev && ev.stopPropagation && ev.stopPropagation();
             const note = prompt('Add a short note for Admin/HR (optional):', '');
@@ -1640,13 +1921,14 @@
                 }
             } catch { }
 
-            // fallback to mail
-            const mailto = `mailto:hr@example.com?subject=WFH%20Request&body=${encodeURIComponent(
+            // No API? Fall back to email:
+            const mailto = `mailto:pet.health2023@gmail.com?subject=WFH%20Request&body=${encodeURIComponent(
                 `Employee: ${currentUser.name} (#${currentUser.id})%0D%0ADate: ${getCurrentDateTime().date}%0D%0AReason: ${note}`
             )}`;
             window.location.href = mailto;
             showNotification('Opening your mail app to send the request.');
         }
+
 
         /* When user taps WFH / Office / Client */
         function selectType(type, e) {
@@ -1682,10 +1964,12 @@
             const container = document.getElementById('officeSelection');
             container.innerHTML = '<div class="text-center" style="padding:16px;">Loading offices…</div>';
 
-            if (!accessibleOffices || accessibleOffices.length === 0) {
-                const res = await apiCall('offices', 'GET', { department: currentUser.department });
-                accessibleOffices = (res && res.success) ? (res.offices || []) : [];
-            }
+            // Always refetch – do not rely on cached accessibleOffices
+            const res = await apiCall('offices', 'GET', {
+                active: 1,
+                department: currentUser.department
+            });
+            accessibleOffices = (res && res.success) ? (res.offices || []) : [];
 
             if (accessibleOffices.length === 0) {
                 container.innerHTML = '<p style="color:var(--gray-600)">No offices found.</p>';
@@ -1830,7 +2114,7 @@
                 let loc = null;
                 if ((selectedType === 'office' || selectedType === 'client') && navigator.geolocation) {
                     try {
-                        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 7000 }));
+                        const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000 }));
                         loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
                     } catch { }
                 }
@@ -1860,13 +2144,37 @@
             }
         }
 
-        // (Optional) Keep this shim if something calls updateLocationStatus()
-        async function updateLocationStatus() {
-            if (typeof checkAndUpdateLocationStatus === 'function') {
-                return await checkAndUpdateLocationStatus();
+        // // (Optional) Keep this shim if something calls updateLocationStatus()
+        // async function updateLocationStatus() {
+        //     if (typeof checkAndUpdateLocationStatus === 'function') {
+        //         return await checkAndUpdateLocationStatus();
+        //     }
+        //     return null;
+        // }
+
+        async function populateOfficeDropdowns() {
+            try {
+                const res = await apiCall('offices', 'GET', { active: 1 });
+                const offices = (res && res.success) ? (res.offices || []) : [];
+
+                // Signup page
+                const signupOffice = document.getElementById('signupOffice');
+                if (signupOffice) {
+                    signupOffice.innerHTML = '<option value="">Select Office</option>' +
+                        offices.map(o => `<option value="${o.id}">${o.name}</option>`).join('');
+                }
+
+                // Admin → Add New User
+                const newUserPrimaryOffice = document.getElementById('newUserPrimaryOffice');
+                if (newUserPrimaryOffice) {
+                    newUserPrimaryOffice.innerHTML = '<option value="">Select Office</option>' +
+                        offices.map(o => `<option value="${o.id}">${o.name}</option>`).join('');
+                }
+            } catch (e) {
+                console.error('Failed to load offices for dropdowns', e);
             }
-            return null;
         }
+
         //----------------------------------------------------------------------
         // Check-out Functions
         async function showCheckOut() {
@@ -1875,24 +2183,33 @@
                     employee_id: currentUser.id
                 });
 
-                if (!result.success || !result.record) {
+                if (!result || !result.success || !result.record) {
                     showNotification('No check-in record found for today', 'error');
                     return;
                 }
 
                 const record = result.record;
+                if (!record.check_in_time || !record.date) {
+                    showNotification('No valid check-in time for today', 'error');
+                    return;
+                }
+
                 const checkInTime = new Date(`${record.date}T${record.check_in_time}`);
                 const now = new Date();
                 const workHours = (now - checkInTime) / (1000 * 60 * 60);
 
+                const totalMins = Math.max(0, Math.round(workHours * 60));
+                const hh = Math.floor(totalMins / 60);
+                const mm = totalMins % 60;
+
                 // Populate modal
                 const detailsDiv = document.getElementById('checkOutDetails');
                 detailsDiv.innerHTML = `
-                    <div style="margin-bottom: 12px;"><strong>Office:</strong> ${record.office_name || 'N/A'}</div>
-                    <div style="margin-bottom: 12px;"><strong>Check In:</strong> ${record.check_in_time}</div>
-                    <div style="margin-bottom: 12px;"><strong>Current Time:</strong> ${getCurrentDateTime().time}</div>
-                    <div style="margin-bottom: 12px;"><strong>Work Hours:</strong> ${Math.floor(workHours)}h ${Math.round((workHours % 1) * 60)}m</div>
-                `;
+      <div style="margin-bottom: 12px;"><strong>Office:</strong> ${record.office_name || 'N/A'}</div>
+      <div style="margin-bottom: 12px;"><strong>Check In:</strong> ${record.check_in_time}</div>
+      <div style="margin-bottom: 12px;"><strong>Current Time:</strong> ${getCurrentDateTime().time}</div>
+      <div style="margin-bottom: 12px;"><strong>Work Hours:</strong> ${hh}h ${mm}m</div>
+    `;
 
                 const halfDayWarning = document.getElementById('halfDayWarning');
                 if (workHours < 8) {
@@ -1900,8 +2217,7 @@
                 } else {
                     halfDayWarning.classList.add('hidden');
                 }
-
-                document.getElementById('checkOutModal').classList.add('active');
+                openModal('checkOutModal');
             } catch (error) {
                 showNotification('Error loading check-in information', 'error');
                 console.error('Error:', error);
@@ -1913,7 +2229,6 @@
             const checkOutBtnText = document.getElementById('checkOutBtnText');
             const checkOutSpinner = document.getElementById('checkOutSpinner');
 
-            // Show loading state
             confirmBtn.disabled = true;
             checkOutBtnText.classList.add('hidden');
             checkOutSpinner.classList.remove('hidden');
@@ -1921,7 +2236,7 @@
             try {
                 const currentTime = getCurrentDateTime();
 
-                // Get current location
+                // Try to get location, but don't block checkout if it fails
                 let location = null;
                 if (navigator.geolocation) {
                     try {
@@ -1932,8 +2247,8 @@
                             latitude: position.coords.latitude,
                             longitude: position.coords.longitude
                         };
-                    } catch (error) {
-                        console.warn('Could not get location for check-out:', error);
+                    } catch (geoErr) {
+                        console.warn('Checkout without location (non-blocking):', geoErr);
                     }
                 }
 
@@ -1941,31 +2256,43 @@
                     employee_id: currentUser.id,
                     date: currentTime.date,
                     check_out: currentTime.time,
-                    location: location
+                    location
                 });
 
-                if (result.success) {
-                    let message = 'Check-out recorded successfully!';
-                    if (result.is_half_day) {
-                        message += ` (Marked as half day - ${result.work_hours.toFixed(1)} hours)`;
-                    }
-
-                    showNotification(message);
-                    closeModal('checkOutModal');
-                    loadDashboardData();
-                } else {
-                    showNotification(result.message || 'Failed to record check-out', 'error');
+                // If server responded with non-JSON, apiCall gives { success:false, raw, status }
+                if (!result || result.success !== true) {
+                    console.error('Checkout API raw response:', result && result.raw);
+                    showNotification((result && result.message) || 'Failed to record check-out', 'error');
+                    return;
                 }
-            } catch (error) {
+
+                // Success path
+                let message = 'Check-out recorded successfully!';
+                if (result.is_half_day && typeof result.work_hours === 'number') {
+                    message += ` (Marked as half day - ${result.work_hours.toFixed(1)} hours)`;
+                }
+                showNotification(message);
+
+                // Close modal and refresh live cards (no full page reload)
+                closeModal('checkOutModal');
+                await loadDashboardData();              // updates Today card & stats
+                // (Optional) If Records tab is visible, refresh it too:
+                if (document.getElementById('recordsScreen')?.style.display === 'block') {
+                    await loadAttendanceRecords();
+                }
+            } catch (err) {
+                console.error('Error recording check-out:', err);
                 showNotification('Error recording check-out', 'error');
-                console.error('Error:', error);
             } finally {
-                // Reset button state
                 confirmBtn.disabled = false;
                 checkOutBtnText.classList.remove('hidden');
                 checkOutSpinner.classList.add('hidden');
             }
         }
+
+
+
+
 
         // Records Functions
         async function loadAttendanceRecords() {
@@ -2012,7 +2339,7 @@
 
             const tableHeaders = currentUser.role === 'admin' ?
                 ['Employee', 'Department', 'Date', 'Check In', 'Check Out', 'Hours', 'Type', 'Status', 'Office'] :
-                ['Date', 'Check In', 'Check Out', 'Hours', 'Type', 'Status', 'Office', 'Image'];
+                ['Date', 'Check In', 'Check Out', 'Hours', 'Type', 'Status', 'Office', 'Photo'];
 
             const tableHTML = `
                 <table class="records-table">
@@ -2061,131 +2388,127 @@
 
         /* ===== Admin panel ===== */
 
+        // --- tiny escape helper for table cells
+        function h(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+
+
+        /* Open Admin Panel and ALWAYS pull fresh data from DB */
+        // === ADMIN: open panel and load everything ===
         async function openAdminPanel() {
-            // show panel and refresh lists
+            if (!currentUser || currentUser.role !== 'admin') {
+                showNotification('Admins only.', 'warning');
+                return;
+            }
             showScreen('adminScreen');
-            await refreshAdminOffices();    // loads offices into lists and selects
-            await refreshAdminUsers();
+            await Promise.all([refreshAdminOffices(), refreshAdminUsers(), refreshPrimaryOfficeSelects()]);
+            accessibleOffices = [];
+            adminOfficeEditId = null;
+            document.getElementById('addOfficeMsg').textContent = '';
+            document.getElementById('addUserMsg').textContent = '';
         }
+
+
+        // Small helper to build query params
+        function toQuery(obj) {
+            return Object.keys(obj).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k])).join('&');
+        }
+
+
+        /* ----- Offices (list, add, delete) ----- */
+
+        let adminOfficeEditId = null; // null = ADD, number = EDIT
 
         async function refreshAdminOffices() {
-            const listContainer = document.getElementById('adminOfficesList');
-            const selectEl = document.getElementById('newUserPrimaryOffice');
-            listContainer.innerHTML = 'Loading offices...';
-            selectEl.innerHTML = '<option value="">Loading offices…</option>';
-            document.getElementById('officeCount').textContent = '';
+            const box = document.getElementById('adminOfficesList');
+            box.innerHTML = '<div class="text-center" style="padding:12px;"><div class="loading-spinner" style="margin:0 auto;"></div> Loading offices…</div>';
 
-            // Try endpoint candidates (most likely first)
-            const candidates = [
-                { ep: 'offices-all', method: 'GET' },   // admin/all offices
-                { ep: 'offices', method: 'GET' }        // department-based (fallback)
-            ];
+            const res = await apiCall('offices-all', 'GET', { active: 1 });
+            const offices = (res && res.success && Array.isArray(res.offices)) ? res.offices : [];
 
-            let res = null;
-            let offices = [];
-
-            for (const c of candidates) {
-                try {
-                    // If using GET, we pass no body (apiCall handles GET properly)
-                    if (c.ep === 'offices') {
-                        // try without department first
-                        res = await apiCall(c.ep, c.method);
-                    } else {
-                        res = await apiCall(c.ep, c.method);
-                    }
-                    console.log(`refreshAdminOffices: tried ${c.ep}`, res);
-                    if (res && res.success && Array.isArray(res.offices) && res.offices.length > 0) {
-                        offices = res.offices;
-                        break;
-                    } else if (res && res.success && Array.isArray(res.offices) && res.offices.length === 0) {
-                        // endpoint returned empty array — stop trying other endpoints
-                        offices = [];
-                        break;
-                    }
-                    // otherwise try next candidate
-                } catch (err) {
-                    console.error('refreshAdminOffices error trying', c.ep, err);
-                    // continue to next candidate
-                }
-            }
-
-            // Finalize UI depending on result
-            if (!offices || offices.length === 0) {
-                listContainer.innerHTML = '<p style="color:var(--gray-600)">No offices found.</p>';
-                selectEl.innerHTML = '<option value="">No offices available</option>';
-                document.getElementById('officeCount').textContent = '(0 total)';
-                return;
-            }
-
-            document.getElementById('officeCount').textContent = `(${offices.length} total)`;
-            // populate office select
-            selectEl.innerHTML = '<option value="">Select Office</option>';
-            offices.forEach(o => {
-                const opt = document.createElement('option');
-                opt.value = o.id;
-                opt.textContent = o.name || (`Office #${o.id}`);
-                selectEl.appendChild(opt);
-            });
-
-            // build cards listing
-            listContainer.innerHTML = '';
-            offices.forEach(o => {
-                const node = document.createElement('div');
-                node.style.cssText = 'padding:12px;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;';
-                node.innerHTML = `
-            <div>
-                <strong>${escapeHtml(o.name)}</strong>
-                <div style="color:var(--gray-500); font-size:13px;">Lat: ${o.latitude || '-'}, Lng: ${o.longitude || '-'} · Radius: ${o.radius_meters || '-'}m</div>
-                <div style="color:var(--gray-500); font-size:13px;">${o.address || ''}</div>
-            </div>
-            <div style="display:flex; gap:8px;">
-                <button class="btn" onclick="promptEditOffice(${o.id})">✏️ Edit</button>
-                <button class="btn btn-secondary" onclick="generateOfficeQR(${o.id})">🔗 QR</button>
-                <button class="btn btn-error" style="background:var(--error-color); color:#fff;" onclick="deleteOffice(${o.id})">🗑️</button>
-            </div>
-            `;
-                listContainer.appendChild(node);
-            });
+            document.getElementById('officeCount').textContent = `(${offices.length})`;
+            box.innerHTML = renderOfficesTable(offices);
         }
 
+        function renderOfficesTable(offices) {
+            if (!offices.length) return '<p style="color:var(--gray-600)">No offices yet.</p>';
 
-        async function refreshAdminUsers() {
-            const tbody = document.getElementById('adminUsersList');
-            tbody.innerHTML = '<tr><td colspan="7">Loading users...</td></tr>';
-            const res = await apiCall('admin-users', 'GET');
-
-            if (!res || !res.success) {
-                tbody.innerHTML = '<tr><td colspan="7" style="color:var(--error-color)">Failed to load users</td></tr>';
-                document.getElementById('userCount').textContent = '';
-                return;
-            }
-
-            const users = res.users || [];
-            document.getElementById('userCount').textContent = `(${users.length} total)`;
-
-            if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7">No users found.</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = users.map(u => `
+            const rows = offices.map(o => `
     <tr>
-      <td>${u.id}</td>
-      <td>${escapeHtml(u.name)}</td>
-      <td>${escapeHtml(u.username)}</td>
-      <td>${escapeHtml(u.phone || u.mobile || '')}</td>
-      <td>${escapeHtml(u.department || '')}</td>
-      <td>${escapeHtml(u.role || '')}</td>
-      <td>
-        <button class="btn" onclick="promptEditUser(${u.id})">✏️ Edit</button>
-        <button class="btn" style="background:#ffcccc;color:#800000;" onclick="deleteUser(${u.id})">🗑️ Delete</button>
+      <td>${o.id}</td>
+      <td>${o.name || ''}</td>
+      <td>${o.address || ''}</td>
+      <td>${o.latitude ?? ''}</td>
+      <td>${o.longitude ?? ''}</td>
+      <td>${o.radius_meters ?? ''}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-secondary" onclick="startEditOffice(${o.id})">Edit</button>
+        <button class="btn" style="background:#ef4444;color:#fff" onclick="deleteOffice(${o.id})">Delete</button>
       </td>
     </tr>
   `).join('');
+
+            return `
+    <div style="overflow:auto; max-height:420px;">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th style="width:60px">ID</th>
+            <th>Name</th>
+            <th>Address</th>
+            <th>Lat</th>
+            <th>Lng</th>
+            <th>Radius(m)</th>
+            <th style="width:160px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
         }
 
-        /* ===== Add Office ===== */
+        // Submit (add or update)
+        function numOrNull(v) {
+            const n = parseFloat(v);
+            return Number.isFinite(n) ? n : null;
+        }
+
+        async function submitNewOffice() {
+            const msg = document.getElementById('addOfficeMsg');
+            msg.textContent = '';
+
+            const name = document.getElementById('newOfficeName').value.trim();
+            const address = document.getElementById('newOfficeAddress').value.trim();
+            const lat = parseFloat(document.getElementById('newOfficeLat').value);
+            const lng = parseFloat(document.getElementById('newOfficeLng').value);
+            const radius = parseInt(document.getElementById('newOfficeRadius').value, 10);
+
+            if (!name) return msg.textContent = 'Office name is required';
+            if (Number.isNaN(lat) || Number.isNaN(lng) || Number.isNaN(radius)) {
+                msg.textContent = 'Latitude, longitude and radius are required and must be numbers';
+                return;
+            }
+
+            const payload = { name, address, latitude: lat, longitude: lng, radius_meters: radius };
+            const endpoint = adminOfficeEditId ? `office/${adminOfficeEditId}` : 'office';
+            const res = await apiCall(endpoint, 'POST', payload);
+
+            if (res && res.success) {
+                showNotification(adminOfficeEditId ? 'Office updated' : 'Office added');
+                clearOfficeForm();
+                await refreshAdminOffices();
+                await refreshPrimaryOfficeSelects();
+                await populateOfficeDropdowns();
+                accessibleOffices = []; // drop cache so Attendance screen refreshes
+            } else {
+                msg.textContent = (res && res.message) ? res.message : 'Failed to save office';
+            }
+        }
+
+
+
         function clearOfficeForm() {
+            adminOfficeEditId = null;
             document.getElementById('newOfficeName').value = '';
             document.getElementById('newOfficeAddress').value = '';
             document.getElementById('newOfficeLat').value = '';
@@ -2194,289 +2517,327 @@
             document.getElementById('addOfficeMsg').textContent = '';
         }
 
-        async function submitNewOffice() {
-            const name = document.getElementById('newOfficeName').value.trim();
-            const address = document.getElementById('newOfficeAddress').value.trim();
-            const latitude = document.getElementById('newOfficeLat').value.trim();
-            const longitude = document.getElementById('newOfficeLng').value.trim();
-            const radius = document.getElementById('newOfficeRadius').value.trim();
-
-            if (!name) return showNotification('Office name is required', 'error');
-
-            const payload = { name, address, latitude: latitude || null, longitude: longitude || null, radius_meters: radius || null };
-
-            // Try common office-create endpoints. Adjust to your backend if different.
-            const attempts = ['office', 'offices', 'office-create'];
-            let res = null;
-            for (const ep of attempts) {
-                res = await apiCall(ep, 'POST', payload);
-                if (res && res.success) break;
+        async function startEditOffice(id) {
+            const res = await apiCall(`office/${id}`, 'GET');
+            if (!res || !res.success || !res.office) {
+                showNotification('Failed to load office', 'error');
+                return;
             }
+            const o = res.office;
+            adminOfficeEditId = o.id;
+            document.getElementById('newOfficeName').value = o.name || '';
+            document.getElementById('newOfficeAddress').value = o.address || '';
+            document.getElementById('newOfficeLat').value = o.latitude ?? '';
+            document.getElementById('newOfficeLng').value = o.longitude ?? '';
+            document.getElementById('newOfficeRadius').value = o.radius_meters ?? '';
+            document.getElementById('addOfficeMsg').textContent = 'Editing office #' + o.id;
+        }
 
+        async function deleteOffice(id) {
+            if (!confirm('Delete this office?')) return;
+            let res = await fetch(`${apiBaseUrl}?endpoint=${encodeURIComponent('office/' + id)}`, { method: 'DELETE' })
+                .then(r => r.json()).catch(() => null);
             if (res && res.success) {
-                document.getElementById('addOfficeMsg').textContent = 'Office added successfully';
-                clearOfficeForm();
+                showNotification('Office deleted');
                 await refreshAdminOffices();
-                showNotification('Office created');
+                await refreshPrimaryOfficeSelects();
+                accessibleOffices = [];
             } else {
-                console.error('Add office failed:', res);
-                showNotification((res && res.message) ? res.message : 'Failed to add office. Check server endpoints.', 'error');
+                showNotification((res && res.message) || 'Failed to delete office', 'error');
             }
         }
 
-        /* ===== Add User ===== */
+
+
+
+        /* ----- Users (list, add, delete) ----- */
+
+        async function refreshAdminUsers() {
+            const tbody = document.getElementById('adminUsersList');
+            tbody.innerHTML = `
+    <tr><td colspan="7">
+      <div class="text-center" style="padding:12px;"><div class="loading-spinner" style="margin:0 auto;"></div> Loading users…</div>
+    </td></tr>`;
+
+            const res = await apiCall('admin-users', 'GET');
+            const users = (res && res.success && Array.isArray(res.users)) ? res.users : [];
+
+            document.getElementById('userCount').textContent = `(${users.length})`;
+            tbody.innerHTML = users.map(u => `
+    <tr>
+      <td>${u.id}</td>
+      <td>${u.name || ''}</td>
+      <td>${u.username || ''}</td>
+      <td>${u.phone || ''}</td>
+      <td>${u.department || ''}</td>
+      <td>${u.role || ''}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-secondary" onclick="editUserInline(${u.id})">Edit</button>
+        <button class="btn" style="background:#ef4444;color:#fff" onclick="deleteUser(${u.id})">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+        }
+
+        // Populate Primary Office dropdowns (signup + admin add user)
+        // index.html
+        async function refreshPrimaryOfficeSelects() {
+            try {
+                const res = await apiCall('offices', 'GET', { active: 1 });
+                const offices = (res && res.success && Array.isArray(res.offices)) ? res.offices : [];
+
+                const signupSel = document.getElementById('signupOffice');
+                const adminSel = document.getElementById('newUserPrimaryOffice');
+
+                const options = '<option value="">Select Office</option>' +
+                    offices.map(o => `<option value="${o.id}">${o.name}</option>`).join('');
+
+                if (signupSel) signupSel.innerHTML = options;
+                if (adminSel) adminSel.innerHTML = options;
+            } catch (e) {
+                console.error('Failed to refresh primary office selects', e);
+            }
+        }
+
+        async function submitNewUser() {
+            const msg = document.getElementById('addUserMsg');
+            msg.textContent = '';
+
+            const payload = {
+                name: document.getElementById('newUserName').value.trim(),
+                username: document.getElementById('newUserUsername').value.trim(),
+                phone: document.getElementById('newUserPhone').value.trim(),
+                email: document.getElementById('newUserEmail').value.trim(),
+                department: document.getElementById('newUserDepartment').value,
+                primary_office: document.getElementById('newUserPrimaryOffice').value,
+                role: document.getElementById('newUserRole').value,
+            };
+
+            const passwordVal = document.getElementById('newUserPassword').value.trim();
+            if (passwordVal) payload.password = passwordVal; // only if admin enters new password
+
+            // Required checks
+            if (!payload.name || !payload.username || !payload.email || !payload.phone ||
+                !payload.department || !payload.primary_office) {
+                msg.textContent = 'Please fill all required fields';
+                return;
+            }
+
+            let endpoint = adminUserEditId ? `admin-user/${adminUserEditId}` : 'register';
+            const res = await apiCall(endpoint, 'POST', payload);
+
+            if (res && res.success) {
+                showNotification(adminUserEditId ? 'User updated' : 'User added');
+                adminUserEditId = null;
+                clearUserForm();
+                await refreshAdminUsers();
+            } else {
+                msg.textContent = (res && res.message) || 'Failed to save user';
+            }
+        }
+
+
         function clearUserForm() {
+            adminUserEditId = null;
             document.getElementById('newUserName').value = '';
             document.getElementById('newUserUsername').value = '';
             document.getElementById('newUserPhone').value = '';
             document.getElementById('newUserEmail').value = '';
+            document.getElementById('newUserPassword').value = '';
             document.getElementById('newUserDepartment').value = '';
             document.getElementById('newUserPrimaryOffice').value = '';
             document.getElementById('newUserRole').value = 'employee';
-            document.getElementById('newUserPassword').value = '';
             document.getElementById('addUserMsg').textContent = '';
         }
 
-        async function submitNewUser() {
-            const name = document.getElementById('newUserName').value.trim();
-            const username = document.getElementById('newUserUsername').value.trim();
-            const phone = document.getElementById('newUserPhone').value.trim();
-            const email = document.getElementById('newUserEmail').value.trim();
-            const department = document.getElementById('newUserDepartment').value;
-            const primary_office = document.getElementById('newUserPrimaryOffice').value;
-            const role = document.getElementById('newUserRole').value;
-            const password = document.getElementById('newUserPassword').value;
 
-            if (!name || !username || !password) return showNotification('Name, username and password are required', 'error');
-
-            // Use the public register endpoint to create a user (most robust). If your backend has a dedicated admin-user-create endpoint, replace 'register'
-            const payload = { name, username, password, phone, email, department, primary_office, role };
-
-            const res = await apiCall('register', 'POST', payload);
-            if (res && res.success) {
-                showNotification('User created successfully');
-                clearUserForm();
-                await refreshAdminUsers();
-            } else {
-                console.error('Create user failed:', res);
-                showNotification((res && res.message) ? res.message : 'Failed to create user', 'error');
+        async function editUserInline(id) {
+            const res = await apiCall(`admin-user/${id}`, 'GET');
+            if (!res || !res.success || !res.user) {
+                showNotification('Failed to load user', 'error');
+                return;
             }
+
+            const u = res.user;
+            adminUserEditId = u.id;
+
+            // Fill the Add User form automatically
+            document.getElementById('newUserName').value = u.name || '';
+            document.getElementById('newUserUsername').value = u.username || '';
+            document.getElementById('newUserPhone').value = u.phone || '';
+            document.getElementById('newUserEmail').value = u.email || '';
+            document.getElementById('newUserDepartment').value = u.department || '';
+            document.getElementById('newUserPrimaryOffice').value = u.primary_office || '';
+            document.getElementById('newUserRole').value = u.role || '';
+            document.getElementById('newUserPassword').value = ''; // blank for security
+
+            document.getElementById('addUserMsg').textContent = "Editing user #" + u.id;
         }
 
-        /* ===== Edit / Delete Office & User ===== */
 
-        function promptEditOffice(id) {
-            // load office then prompt fields
-            (async () => {
-                const r = await apiCall(`office/${id}`, 'GET');
-                if (!r || !r.success) return showNotification('Could not load office', 'error');
-                const o = r.office;
-                const newName = prompt('Office name', o.name);
-                if (newName === null) return;
-                const newAddress = prompt('Address', o.address || '') || o.address;
-                const newLat = prompt('Latitude', o.latitude || '') || o.latitude;
-                const newLng = prompt('Longitude', o.longitude || '') || o.longitude;
-                const newRadius = prompt('Radius (meters)', o.radius_meters || '') || o.radius_meters;
-
-                const save = await apiCall(`office/${id}`, 'POST', {
-                    name: newName, address: newAddress, latitude: newLat, longitude: newLng, radius_meters: newRadius
-                });
-                if (save && save.success) { showNotification('Office updated'); await refreshAdminOffices(); } else showNotification('Failed to update office', 'error');
-            })();
-        }
-
-        async function deleteOffice(id) {
-            if (!confirm('Delete this office? This action cannot be undone.')) return;
-            // Try DELETE then fallback to POST with delete flag
-            let res = await apiCall(`office/${id}`, 'DELETE');
-            if (!res || !res.success) {
-                res = await apiCall(`office/${id}`, 'POST', { delete: true });
-            }
-            if (res && res.success) { showNotification('Office deleted'); await refreshAdminOffices(); } else { console.error(res); showNotification('Failed to delete office', 'error'); }
-        }
-
-        function promptEditUser(id) {
-            (async () => {
-                const r = await apiCall(`admin-user/${id}`, 'GET');
-                if (!r || !r.success) return showNotification('Could not load user', 'error');
-                const u = r.user;
-                const newName = prompt('Full name', u.name);
-                if (newName === null) return;
-                const newRole = prompt('Role (admin/employee)', u.role) || u.role;
-                const save = await apiCall(`admin-user/${id}`, 'POST', { name: newName, role: newRole });
-                if (save && save.success) { showNotification('User updated'); await refreshAdminUsers(); } else showNotification('Failed to update user', 'error');
-            })();
-        }
 
         async function deleteUser(id) {
-            if (!confirm('Delete this user? This action cannot be undone.')) return;
-            // Try delete endpoint or fallback
-            let res = await apiCall(`admin-user/${id}`, 'DELETE');
-            if (!res || !res.success) {
-                res = await apiCall(`admin-user/${id}`, 'POST', { delete: true });
+            if (!confirm('Delete this user?')) return;
+
+            // Try real DELETE
+            let res = await fetch(`${apiBaseUrl}?endpoint=${encodeURI('admin-user/' + id)}`, { method: 'DELETE' })
+                .then(r => r.json()).catch(() => null);
+
+            if (!res || res.success !== true) {
+                // Fallback: POST with ?_method=DELETE
+                res = await fetch(`${apiBaseUrl}?endpoint=${encodeURI('admin-user/' + id)}&_method=DELETE`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}'
+                }).then(r => r.json()).catch(() => null);
             }
-            if (res && res.success) { showNotification('User deleted'); await refreshAdminUsers(); } else { console.error(res); showNotification('Failed to delete user', 'error'); }
+
+            if (res && res.success) {
+                showNotification('User deleted');
+                await refreshAdminUsers();
+            } else {
+                showNotification((res && res.message) || 'Failed to delete user', 'error');
+            }
         }
 
-        /* ===== Small helpers ===== */
-        function escapeHtml(s) {
-            if (!s && s !== 0) return '';
-            return String(s).replace(/[&<>"']/g, function (m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]; });
+        function openProfile() {
+            if (!currentUser) return;
+            // populate fields
+            document.getElementById('profileName').value = currentUser.name || '';
+            document.getElementById('profileEmail').value = currentUser.email || '';
+            document.getElementById('profilePhone').value = currentUser.phone || '';
+            document.getElementById('profileDepartment').value = currentUser.department || '';
+            document.getElementById('profilePassword').value = '';
+            document.getElementById('profileMsg').textContent = '';
+            showScreen('profileScreen');
         }
 
-        /* ===== optional: generate QR placeholder (if server supports it) ===== */
-        function generateOfficeQR(id) {
-            // If your backend can generate a QR or a url for check-in, open it. Placeholder for now:
-            showNotification('QR generation not implemented on frontend — implement on server to return QR link', 'warning');
+        async function saveProfile() {
+            if (!currentUser) return;
+            const btnText = document.getElementById('profileSaveText');
+            const spin = document.getElementById('profileSaveSpinner');
+            const msg = document.getElementById('profileMsg');
+
+            const payload = {
+                name: document.getElementById('profileName').value.trim(),
+                email: document.getElementById('profileEmail').value.trim(),
+                phone: document.getElementById('profilePhone').value.trim(),
+                department: currentUser.department, // keep department same (locked in UI)
+                role: currentUser.role,            // do not let user change role
+                is_active: 1
+            };
+
+            // Optional: if user entered a new password, call a dedicated endpoint OR extend admin-user to accept it.
+            const newPass = document.getElementById('profilePassword').value.trim();
+            if (newPass.length > 0 && newPass.length < 6) {
+                msg.textContent = 'Password must be at least 6 characters';
+                return;
+            }
+            if (newPass) payload.password = newPass; // Only if your API supports it
+
+            try {
+                btnText.classList.add('hidden'); spin.classList.remove('hidden');
+
+                // Reuse admin-user/{id} POST (your API updates name/email/phone/department/role/is_active)
+                const res = await apiCall(`admin-user/${currentUser.id}`, 'POST', payload);
+
+                if (res && res.success) {
+                    // reflect changes locally
+                    currentUser = { ...currentUser, ...payload };
+                    localStorage.setItem('attendanceUser', JSON.stringify(currentUser));
+                    showNotification('Profile updated');
+                    msg.textContent = 'Saved.';
+                } else {
+                    showNotification((res && res.message) || 'Failed to update', 'error');
+                    msg.textContent = (res && res.message) || 'Failed to update';
+                }
+            } catch (e) {
+                showNotification('Error updating profile', 'error');
+                msg.textContent = 'Error updating profile.';
+            } finally {
+                btnText.classList.remove('hidden'); spin.classList.add('hidden');
+            }
         }
 
 
-        // Export Functions
         async function exportToExcel() {
-            if (currentUser.role !== 'admin') {
+            // hard gate
+            if (!currentUser || currentUser.role !== 'admin') {
                 showNotification('Export feature is available for admin users only', 'warning');
                 return;
             }
 
             try {
-                showNotification('Generating report...', 'success');
+                showNotification('Generating report...');
 
-                // GET with no body; or pass filters as query params: apiCall('attendance-records','GET',{start_date:...,employee_id:...})
-                const result = await apiCall('attendance-records', 'GET');
-
-                if (!result || !result.success) {
-                    console.error('Export failed - server response:', result);
-                    showNotification(result && result.message ? result.message : 'No records to export', 'warning');
+                // Pull ALL records (admin export)
+                const res = await apiCall('attendance-records', 'GET', {}); // no employee_id -> all
+                if (!res || !res.success) {
+                    showNotification('Export failed: API error', 'error');
+                    console.error('Export API error:', res);
                     return;
                 }
 
-                if (!result.records || result.records.length === 0) {
+                const records = Array.isArray(res.records) ? res.records : [];
+                if (records.length === 0) {
                     showNotification('No records to export', 'warning');
                     return;
                 }
 
-                // Create CSV content
-                const headers = ['Employee Name', 'Department', 'Date', 'Check In', 'Check Out', 'Total Hours', 'Type', 'Status', 'Office', 'Image'];
-                const rows = result.records.map(record => [
-                    record.employee_name || '',
-                    record.department || '',
-                    record.date || '',
-                    record.check_in_time || '',
-                    record.check_out_time || '',
-                    (typeof record.total_hours === 'number') ? record.total_hours.toFixed(1) : (record.total_hours ? String(record.total_hours) : '0'),
-                    record.type ? record.type.toUpperCase() : '',
-                    record.status ? String(record.status).replace('_', ' ').toUpperCase() : '',
-                    record.office_name || '',
-                    record.photo_url || ''
-                ]);
+                // Normalize rows for the sheet
+                const rows = records.map(r => ({
+                    'Employee Name': r.employee_name || '',
+                    'Department': r.department || '',
+                    'Date': r.date || '',
+                    'Check In': r.check_in_time || '',
+                    'Check Out': r.check_out_time || '',
+                    'Total Hours': (typeof r.total_hours === 'number') ? r.total_hours : '',
+                    'Type': (r.type || '').toUpperCase(),
+                    'Status': (r.status || '').replace('_', ' ').toUpperCase(),
+                    'Office': r.office_name || '',
+                    'Photo URL': r.photo_url || '' // keep URL; embedding needs Pro version of SheetJS
+                }));
 
-                const csvContent = [headers, ...rows]
-                    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-                    .join('\n');
+                // Create workbook
+                const wb = XLSX.utils.book_new();
 
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `attendance_report_${getCurrentDateTime().date}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
+                // Sheet 1: Attendance
+                const ws1 = XLSX.utils.json_to_sheet(rows, { origin: 'A1' });
+                XLSX.utils.book_append_sheet(wb, ws1, 'Attendance');
 
+                // Sheet 2: Photos (clickable)
+                const photoRows = rows
+                    .filter(r => r['Photo URL'])
+                    .map(r => ({
+                        'Employee Name': r['Employee Name'],
+                        'Date': r['Date'],
+                        'Photo URL': r['Photo URL']
+                    }));
+
+                if (photoRows.length > 0) {
+                    const ws2 = XLSX.utils.json_to_sheet(photoRows, { origin: 'A1' });
+                    XLSX.utils.book_append_sheet(wb, ws2, 'Photos');
+                }
+
+                // Filename
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                const filename = `attendance_report_${yyyy}-${mm}-${dd}.xlsx`;
+
+                // Write file
+                XLSX.writeFile(wb, filename);
                 showNotification('Report exported successfully!');
-            } catch (error) {
-                console.error('Error exporting data:', error);
+            } catch (err) {
+                console.error('Export error:', err);
                 showNotification('Error exporting data', 'error');
             }
         }
 
 
-        // Modal Functions
-        function showModal(modalId, message) {
-            const modal = document.getElementById(modalId);
 
-            if (modalId === 'successModal') {
-                const messageEl = document.getElementById('successMessage');
-                if (messageEl) messageEl.textContent = message;
 
-                // Auto-close and redirect after 2 seconds
-                setTimeout(() => {
-                    closeModal(modalId);
-                    showScreen('dashboardScreen');
-                    loadDashboardData();
-                }, 2000);
-            }
-
-            modal.classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        // Utility Functions
-        function calculateDistance(lat1, lng1, lat2, lng2) {
-            const R = 6371000; // Earth radius in meters
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLng = (lng2 - lng1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLng / 2) * Math.sin(dLng / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
-
-        async function openAdminPanel() {
-            showScreen('adminScreen');
-            await loadAdminUsers();
-            await loadAdminOffices();
-        }
-
-        async function loadAdminUsers() {
-            const container = document.getElementById('adminUsersList');
-            container.innerHTML = 'Loading...';
-            const r = await apiCall('admin-users', 'GET');
-            if (!r.success) { container.innerText = 'Failed to load users'; return; }
-            const users = r.users || [];
-            container.innerHTML = users.map(u => `<div style="padding:8px;border-radius:6px;border:1px solid #eee;margin-bottom:8px;">
-        <strong>${u.name} (${u.username})</strong><div class="muted">${u.department || ''} — ${u.role}</div>
-        <div style="margin-top:8px"><button class="btn btn-secondary" onclick="editUser(${u.id})">Edit</button></div></div>`).join('') || '<p>No users</p>';
-        }
-
-        async function editUser(userId) {
-            const r = await apiCall('admin-user/' + userId, 'GET');
-            if (!r.success) return showNotification('Could not load user', 'error');
-            const u = r.user;
-            const newName = prompt('Full name', u.name);
-            if (newName === null) return;
-            const newRole = prompt('Role (admin/employee)', u.role) || u.role;
-            const save = await apiCall('admin-user/' + userId, 'POST', { name: newName, role: newRole });
-            if (save.success) { showNotification('User updated'); loadAdminUsers(); } else showNotification('Failed to update');
-        }
-
-        async function loadAdminOffices() {
-            const container = document.getElementById('adminOfficesList');
-            container.innerHTML = 'Loading...';
-            const r = await apiCall('offices-all', 'GET');
-            if (!r.success) { container.innerText = 'Failed to load offices'; return; }
-            container.innerHTML = r.offices.map(o => `<div style="padding:8px;border-radius:6px;border:1px solid #eee;margin-bottom:8px;">
-        <strong>${o.name}</strong><div class="muted">${o.address || ''}</div>
-        <div style="margin-top:8px"><button class="btn btn-secondary" onclick="editOffice('${o.id}')">Edit</button></div></div>`).join('');
-        }
-
-        async function editOffice(officeId) {
-            const r = await apiCall('office/' + officeId, 'GET');
-            if (!r.success) return showNotification('Could not load office', 'error');
-            const o = r.office;
-            const newName = prompt('Office name', o.name); if (newName === null) return;
-            const newAddress = prompt('Address', o.address) || o.address;
-            const newLat = prompt('Latitude', o.latitude) || o.latitude;
-            const newLng = prompt('Longitude', o.longitude) || o.longitude;
-            const newRadius = prompt('Radius (meters)', o.radius_meters) || o.radius_meters;
-            const save = await apiCall('office/' + officeId, 'POST', { name: newName, address: newAddress, latitude: newLat, longitude: newLng, radius_meters: newRadius });
-            if (save.success) { showNotification('Office updated'); loadAdminOffices(); } else showNotification('Failed to update office');
-        }
     </script>
 
 
