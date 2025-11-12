@@ -393,60 +393,67 @@ class APIRouter
         $this->attendanceManager = new AttendanceManager($this->db);
     }
 
-    public function handleRequest()
-    {
-        $method = $_SERVER['REQUEST_METHOD'];
-        $path = $this->getPath();
+public function handleRequest()
+{
+    $method = $_SERVER['REQUEST_METHOD'];
+    $path = $this->getPath();
 
-        // Handle admin routes first (will echo+exit on match)
-        $this->handleAdminRoutes($path, $method);
+    // Handle admin routes first (will echo+exit on match)
+    $this->handleAdminRoutes($path, $method);
 
-        try {
-            switch ($path) {
-                case 'login':
-                    ($method === 'POST') ? $this->handleLogin() : $this->methodNotAllowed();
-                    break;
-                case 'register':
-                    ($method === 'POST') ? $this->handleRegister() : $this->methodNotAllowed();
-                    break;
-                case 'check-location':
-                    ($method === 'POST') ? $this->handleCheckLocation() : $this->methodNotAllowed();
-                    break;
-                case 'mark-attendance':
-                    ($method === 'POST') ? $this->handleMarkAttendance() : $this->methodNotAllowed();
-                    break;
-                case 'check-out':
-                    ($method === 'POST') ? $this->handleCheckOut() : $this->methodNotAllowed();
-                    break;
-                case 'today-attendance':
-                    ($method === 'GET') ? $this->handleTodayAttendance() : $this->methodNotAllowed();
-                    break;
-                case 'attendance-records':
-                    ($method === 'GET') ? $this->handleAttendanceRecords() : $this->methodNotAllowed();
-                    break;
-                case 'monthly-stats':
-                    ($method === 'GET') ? $this->handleMonthlyStats() : $this->methodNotAllowed();
-                    break;
-                case 'wfh-eligibility':
-                    ($method === 'GET') ? $this->handleWFHEligibility() : $this->methodNotAllowed();
-                    break;
-                case 'wfh-request':
-                    ($method === 'POST') ? $this->handleWFHRequest() : $this->methodNotAllowed();
-                    break;
-                case 'offices-all':
-                case 'offices':
-                    $this->handleOfficeRoutes($path, $method);
-                    break;
+    try {
+        switch ($path) {
+            case 'login':
+                ($method === 'POST') ? $this->handleLogin() : $this->methodNotAllowed();
+                break;
+            case 'register':
+                ($method === 'POST') ? $this->handleRegister() : $this->methodNotAllowed();
+                break;
 
-                default:
-                    $this->notFound();
-                    break;
-            }
-        } catch (Exception $e) {
-            error_log("API Error: " . $e->getMessage());
-            $this->internalServerError();
+            // Offices (public/admin common endpoints)
+            case 'offices-all':         // returns all offices (admin UI uses this)
+            case 'offices':             // used by many front-end calls (filtered by dept)
+            case 'office':              // create or list depending on method/usage
+            case (preg_match('#^office/([0-9A-Za-z_-]+)$#', $path) ? true : false):
+                // Delegate all office-related logic to the dedicated handler
+                $this->handleOfficeRoutes($path, $method);
+                break;
+
+            case 'check-location':
+                ($method === 'POST') ? $this->handleCheckLocation() : $this->methodNotAllowed();
+                break;
+            case 'mark-attendance':
+                ($method === 'POST') ? $this->handleMarkAttendance() : $this->methodNotAllowed();
+                break;
+            case 'check-out':
+                ($method === 'POST') ? $this->handleCheckOut() : $this->methodNotAllowed();
+                break;
+            case 'today-attendance':
+                ($method === 'GET') ? $this->handleTodayAttendance() : $this->methodNotAllowed();
+                break;
+            case 'attendance-records':
+                ($method === 'GET') ? $this->handleAttendanceRecords() : $this->methodNotAllowed();
+                break;
+            case 'monthly-stats':
+                ($method === 'GET') ? $this->handleMonthlyStats() : $this->methodNotAllowed();
+                break;
+            case 'wfh-eligibility':
+                ($method === 'GET') ? $this->handleWFHEligibility() : $this->methodNotAllowed();
+                break;
+            case 'wfh-request':
+                ($method === 'POST') ? $this->handleWFHRequest() : $this->methodNotAllowed();
+                break;
+
+            default:
+                $this->notFound();
+                break;
         }
+    } catch (Exception $e) {
+        error_log("API Error: " . $e->getMessage());
+        $this->internalServerError();
     }
+}
+
 
     private function getPath()
     {
@@ -537,37 +544,79 @@ class APIRouter
             }
 
             if ($method === 'POST') {
-                // update (front-end sends JSON)
-                $data = $this->getJsonInput();
+    // update (front-end sends JSON)
+    $data = $this->getJsonInput();
 
-                $st = $pdo->prepare("
-            UPDATE employees
-               SET name        = :name,
-                   email       = :email,
-                   phone       = :phone,
-                   department  = :department,
-                   role        = :role,
-                   is_active   = :is_active
-             WHERE id          = :id
-        ");
-                $st->execute([
-                    ':name' => $data['name'] ?? null,
-                    ':email' => $data['email'] ?? null,
-                    ':phone' => $data['phone'] ?? null,
-                    ':department' => $data['department'] ?? null,
-                    ':role' => $data['role'] ?? 'employee',
-                    ':is_active' => isset($data['is_active']) ? (int) !!$data['is_active'] : 1,
-                    ':id' => $id,
-                ]);
+    // Basic validation: at least name/email/phone present (optional)
+    $name = $data['name'] ?? null;
+    $email = $data['email'] ?? null;
+    $phone = $data['phone'] ?? null;
+    $department = $data['department'] ?? null;
+    $role = $data['role'] ?? 'employee';
+    $is_active = isset($data['is_active']) ? (int) !!$data['is_active'] : 1;
+    $primary_office = $data['primary_office'] ?? null;
+    $password = isset($data['password']) ? trim($data['password']) : null;
 
-                echo json_encode(['success' => true, 'message' => 'User updated']);
-                exit;
-            }
-
-            // If we got here, method not allowed for /admin-user/{id}
-            $this->methodNotAllowed();
-            exit;
+    try {
+        if ($password) {
+            // update password + other fields
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+            $st = $pdo->prepare("
+                UPDATE employees
+                   SET name = :name,
+                       email = :email,
+                       phone = :phone,
+                       department = :department,
+                       role = :role,
+                       is_active = :is_active,
+                       primary_office = :primary_office,
+                       password = :password
+                 WHERE id = :id
+            ");
+            $st->execute([
+                ':name' => $name,
+                ':email' => $email,
+                ':phone' => $phone,
+                ':department' => $department,
+                ':role' => $role,
+                ':is_active' => $is_active,
+                ':primary_office' => $primary_office,
+                ':password' => $hash,
+                ':id' => $id,
+            ]);
+        } else {
+            // update all except password
+            $st = $pdo->prepare("
+                UPDATE employees
+                   SET name = :name,
+                       email = :email,
+                       phone = :phone,
+                       department = :department,
+                       role = :role,
+                       is_active = :is_active,
+                       primary_office = :primary_office
+                 WHERE id = :id
+            ");
+            $st->execute([
+                ':name' => $name,
+                ':email' => $email,
+                ':phone' => $phone,
+                ':department' => $department,
+                ':role' => $role,
+                ':is_active' => $is_active,
+                ':primary_office' => $primary_office,
+                ':id' => $id,
+            ]);
         }
+
+        echo json_encode(['success' => true, 'message' => 'User updated']);
+        exit;
+    } catch (PDOException $e) {
+        error_log("Update admin-user error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Failed to update user: ' . $e->getMessage()]);
+        exit;
+    }
+}
 
 
         // Offices list (only active)
@@ -721,7 +770,7 @@ class APIRouter
             exit;
         }
 
-    }
+        }}
 
     // ----------- non-admin handlers -----------
     private function handleLogin()

@@ -1159,6 +1159,7 @@
         let stream = null;
         let accessibleOffices = [];
         let editingUserId = null;
+        let adminUserEditId = null;
 
         // API Configuration
         const apiBaseUrl = "./api.php";
@@ -2645,24 +2646,30 @@
             };
 
             const passwordVal = document.getElementById('newUserPassword').value.trim();
-            if (passwordVal) payload.password = passwordVal; // only if admin enters new password
 
-            // Required checks
+            if (!adminUserEditId) {
+                // creating -> password required
+                if (!passwordVal) {
+                    msg.textContent = 'Password is required when creating a new user';
+                    return;
+                }
+                payload.password = passwordVal;
+            } else {
+                // editing -> password optional
+                if (passwordVal) payload.password = passwordVal;
+            }
+
+            // required fields
             if (!payload.name || !payload.username || !payload.email || !payload.phone ||
                 !payload.department || !payload.primary_office) {
                 msg.textContent = 'Please fill all required fields';
                 return;
             }
 
-            // Choose endpoint: register (create) or admin-user/{id} (update)
             let endpoint = 'register';
-            let method = 'POST';
-            if (adminUserEditId) {
-                endpoint = `admin-user/${adminUserEditId}`;
-                method = 'POST'; // your API expects POST to update admin-user/{id}
-            }
+            if (adminUserEditId) endpoint = `admin-user/${adminUserEditId}`;
 
-            const res = await apiCall(endpoint, method, payload);
+            const res = await apiCall(endpoint, 'POST', payload);
 
             if (res && res.success) {
                 showNotification(adminUserEditId ? 'User updated' : 'User added');
@@ -2676,13 +2683,13 @@
 
 
 
+
         function clearUserForm() {
             adminUserEditId = null;
-            document.getElementById('newUserName').value = '';
-            document.getElementById('newUserUsername').value = '';
-            document.getElementById('newUserPhone').value = '';
-            document.getElementById('newUserEmail').value = '';
-            document.getElementById('newUserPassword').value = '';
+            ['newUserName', 'newUserUsername', 'newUserPhone', 'newUserEmail', 'newUserPassword'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
             document.getElementById('newUserDepartment').value = '';
             document.getElementById('newUserPrimaryOffice').value = '';
             document.getElementById('newUserRole').value = 'employee';
@@ -2690,27 +2697,34 @@
         }
 
 
-        async function editUserInline(id) {
-            const res = await apiCall(`admin-user/${id}`, 'GET');
-            if (!res || !res.success || !res.user) {
-                showNotification('Failed to load user', 'error');
-                return;
+
+        async function startEditUser(id) {
+            try {
+                const res = await apiCall(`admin-user/${id}`, 'GET');
+                if (!res || !res.success || !res.user) {
+                    showNotification('Failed to load user', 'error');
+                    return;
+                }
+                const u = res.user;
+                adminUserEditId = u.id;
+
+                // Fill the Add New User form so admin can edit inline
+                document.getElementById('newUserName').value = u.name || '';
+                document.getElementById('newUserUsername').value = u.username || '';
+                document.getElementById('newUserPhone').value = u.phone || '';
+                document.getElementById('newUserEmail').value = u.email || '';
+                document.getElementById('newUserDepartment').value = u.department || '';
+                document.getElementById('newUserPrimaryOffice').value = u.primary_office || '';
+                document.getElementById('newUserRole').value = u.role || 'employee';
+                document.getElementById('newUserPassword').value = ''; // don't prefill password
+
+                document.getElementById('addUserMsg').textContent = 'Editing user #' + u.id;
+                // Scroll admin panel to the Add User card (optional nicety)
+                document.getElementById('newUserName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (e) {
+                console.error('startEditUser error', e);
+                showNotification('Error loading user', 'error');
             }
-
-            const u = res.user;
-            adminUserEditId = u.id;
-
-            // Fill the Add User form automatically
-            document.getElementById('newUserName').value = u.name || '';
-            document.getElementById('newUserUsername').value = u.username || '';
-            document.getElementById('newUserPhone').value = u.phone || '';
-            document.getElementById('newUserEmail').value = u.email || '';
-            document.getElementById('newUserDepartment').value = u.department || '';
-            document.getElementById('newUserPrimaryOffice').value = u.primary_office || '';
-            document.getElementById('newUserRole').value = u.role || '';
-            document.getElementById('newUserPassword').value = ''; // blank for security
-
-            document.getElementById('addUserMsg').textContent = "Editing user #" + u.id;
         }
 
 
