@@ -2603,7 +2603,7 @@
       <td>${u.department || ''}</td>
       <td>${u.role || ''}</td>
       <td style="white-space:nowrap;">
-        <button class="btn btn-secondary" onclick="editUserInline(${u.id})">Edit</button>
+        <button class="btn btn-secondary" onclick="startEditUser(${u.id})">Edit</button>
         <button class="btn" style="background:#ef4444;color:#fff" onclick="deleteUser(${u.id})">Delete</button>
       </td>
     </tr>
@@ -2654,8 +2654,15 @@
                 return;
             }
 
-            let endpoint = adminUserEditId ? `admin-user/${adminUserEditId}` : 'register';
-            const res = await apiCall(endpoint, 'POST', payload);
+            // Choose endpoint: register (create) or admin-user/{id} (update)
+            let endpoint = 'register';
+            let method = 'POST';
+            if (adminUserEditId) {
+                endpoint = `admin-user/${adminUserEditId}`;
+                method = 'POST'; // your API expects POST to update admin-user/{id}
+            }
+
+            const res = await apiCall(endpoint, method, payload);
 
             if (res && res.success) {
                 showNotification(adminUserEditId ? 'User updated' : 'User added');
@@ -2666,6 +2673,7 @@
                 msg.textContent = (res && res.message) || 'Failed to save user';
             }
         }
+
 
 
         function clearUserForm() {
@@ -2792,17 +2800,20 @@
 
 
         async function exportToExcel() {
+            // gate: admin only
             if (!currentUser || currentUser.role !== 'admin') {
                 showNotification('Export feature is available for admin users only', 'warning');
                 return;
             }
 
             try {
-                showNotification('Generating report...');
+                showNotification('Preparing export...');
 
-                const res = await apiCall('attendance-records', 'GET', {}); // admin: all records
+                // Fetch all records (admin)
+                const res = await apiCall('attendance-records', 'GET', {});
                 if (!res || !res.success) {
                     showNotification('Export failed: API error', 'error');
+                    console.error('Export API error:', res);
                     return;
                 }
 
@@ -2812,54 +2823,112 @@
                     return;
                 }
 
-                // Build rows for main sheet (no photo embedding)
-                const rows = records.map(r => ({
-                    'Employee Name': r.employee_name || '',
-                    'Department': r.department || '',
-                    'Date': r.date || '',
-                    'Check In': r.check_in_time || '',
-                    'Check Out': r.check_out_time || '',
-                    'Total Hours': (typeof r.total_hours === 'number') ? r.total_hours : '',
-                    'Type': (r.type || '').toUpperCase(),
-                    'Status': (r.status || '').replace('_', ' ').toUpperCase(),
-                    'Office': r.office_name || '',
-                    'Photo (data URL)': r.photo_url || ''   // <- photo column (data URL)
-                }));
+                // Create workbook & worksheet
+                const wb = new ExcelJS.Workbook();
+                const ws = wb.addWorksheet('Attendance');
 
-                const wb = XLSX.utils.book_new();
-                const ws1 = XLSX.utils.json_to_sheet(rows, { origin: 'A1' });
-                XLSX.utils.book_append_sheet(wb, ws1, 'Attendance');
+                // Define headers
+                const headers = [
+                    { header: 'Employee', key: 'employee', width: 20 },
+                    { header: 'Department', key: 'department', width: 14 },
+                    { header: 'Date', key: 'date', width: 12 },
+                    { header: 'Check In', key: 'check_in', width: 12 },
+                    { header: 'Check Out', key: 'check_out', width: 12 },
+                    { header: 'Total Hours', key: 'total_hours', width: 12 },
+                    { header: 'Type', key: 'type', width: 10 },
+                    { header: 'Status', key: 'status', width: 12 },
+                    { header: 'Office', key: 'office', width: 18 },
+                    { header: 'Photo', key: 'photo', width: 14 } // will hold image column
+                ];
 
-                // Also add a light "Photos" sheet listing only photo URLs for convenience
-                const photoRows = records
-                    .filter(r => r.photo_url)
-                    .map(r => ({ 'Employee': r.employee_name || '', 'Date': r.date || '', 'Photo (data URL)': r.photo_url }));
+                ws.columns = headers;
 
-                if (photoRows.length > 0) {
-                    const ws2 = XLSX.utils.json_to_sheet(photoRows, { origin: 'A1' });
-                    XLSX.utils.book_append_sheet(wb, ws2, 'Photos');
+                // Helper: convert dataURL -> base64 string (ExcelJS accepts base64)
+                function extractBase64FromDataUrl(dataUrl) {
+                    if (!dataUrl || typeof dataUrl !== 'string') return null;
+                    const m = dataUrl.match(/^data:(image\/\w+);base64,(.*)$/);
+                    if (!m) return null;
+                    return { base64: m[2], ext: m[1].split('/')[1] }; // {base64, ext: 'jpeg'|'png' }
                 }
 
+                // Add rows first (text content). We'll add images after adding rows to compute row numbers.
+                records.forEach(r => {
+                    // Normalize employee name (admin export uses employee_name, else use currentUser)
+                    let emp = r.employee_name || r.name || r.employee || (r.employee_id ? `#${r.employee_id}` : '');
+                    ws.addRow({
+                        employee: emp,
+                        department: r.department || '',
+                        date: r.date || '',
+                        check_in: r.check_in_time || '',
+                        check_out: r.check_out_time || '',
+                        total_hours: typeof r.total_hours === 'number' ? r.total_hours : (r.total_hours || ''),
+                        type: (r.type || '').toUpperCase(),
+                        status: (r.status || '').toUpperCase(),
+                        office: r.office_name || ''
+                        // photo cell left blank; image will be placed over the cell
+                    });
+                });
+
+                // Set uniform row height for image rows (e.g. 60 px). Header is row 1.
+                const startRowIndex = 2; // rows start at 2 (1 is header)
+                for (let i = startRowIndex; i < startRowIndex + records.length; i++) {
+                    ws.getRow(i).height = 45; // adjust as needed to fit thumbnail
+                }
+
+                // Now add images
+                for (let i = 0; i < records.length; i++) {
+                    const rec = records[i];
+                    // Your API sometimes returns photo_url or check_in_photo or photo field as data URL
+                    const dataUrl = rec.photo_url || rec.check_in_photo || rec.photo || rec.photo_data || null;
+                    if (!dataUrl) continue;
+                    const info = extractBase64FromDataUrl(dataUrl);
+                    if (!info) continue;
+
+                    // Add image to workbook (ExcelJS supports base64 string)
+                    let imageId;
+                    try {
+                        imageId = wb.addImage({
+                            base64: info.base64,
+                            extension: info.ext === 'jpeg' ? 'jpeg' : (info.ext || 'png')
+                        });
+                    } catch (e) {
+                        console.warn('Failed to add image for row', i, e);
+                        continue;
+                    }
+
+                    // Place image into the 'Photo' column. Find column index
+                    const photoColIndex = ws.columns.findIndex(c => c.key === 'photo') + 1; // 1-based
+                    const rowNumber = startRowIndex + i;
+
+                    // Place image covering that cell with fixed size
+                    ws.addImage(imageId, {
+                        tl: { col: photoColIndex - 1 + 0.15, row: rowNumber - 1 + 0.12 }, // offset inside cell
+                        ext: { width: 60, height: 40 } // thumbnail size (px)
+                    });
+                }
+
+                // Optional: freeze header row
+                ws.views = [{ state: 'frozen', ySplit: 1 }];
+
+                // Generate and download
+                const buf = await wb.xlsx.writeBuffer();
                 const today = new Date();
                 const yyyy = today.getFullYear();
                 const mm = String(today.getMonth() + 1).padStart(2, '0');
                 const dd = String(today.getDate()).padStart(2, '0');
                 const filename = `attendance_report_${yyyy}-${mm}-${dd}.xlsx`;
-
-                XLSX.writeFile(wb, filename);
-                showNotification('Report exported successfully!');
+                saveAs(new Blob([buf], { type: 'application/octet-stream' }), filename);
+                showNotification('Report exported with photos!');
             } catch (err) {
-                console.error('Export error:', err);
-                showNotification('Error exporting data', 'error');
+                console.error('Export error (ExcelJS):', err);
+                showNotification('Error exporting with images', 'error');
             }
         }
 
-
-
-
-
     </script>
 
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 
 
 </body>
