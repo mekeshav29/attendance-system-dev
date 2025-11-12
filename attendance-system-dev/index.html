@@ -2133,10 +2133,14 @@
                 const r = await apiCall('mark-attendance', 'POST', payload);
                 if (r && r.success) {
                     showNotification('Attendance marked successfully');
-                    if (typeof resetAttendanceFlow === 'function') resetAttendanceFlow();
                     if (typeof loadDashboardData === 'function') await loadDashboardData();
+                    // refresh records if you’re on the Records screen
+                    if (document.getElementById('recordsScreen').classList.contains('active')) {
+                        await loadAttendanceRecords();
+                    }
                     showScreen('dashboardScreen');
-                } else {
+                }
+                else {
                     showNotification((r && r.message) || 'Failed to mark attendance', 'error');
                 }
             } finally {
@@ -2295,19 +2299,18 @@
 
 
         // Records Functions
+        // 1) Load records (unchanged logic; just compact)
         async function loadAttendanceRecords() {
             try {
                 const recordsContent = document.getElementById('recordsContent');
 
-                // Show loading
                 recordsContent.innerHTML = `
-                    <div class="text-center" style="padding: 40px;">
-                        <div class="loading-spinner" style="margin: 0 auto 16px; width: 24px; height: 24px;"></div>
-                        <p>Loading attendance records...</p>
-                    </div>
-                `;
+      <div class="text-center" style="padding: 40px;">
+        <div class="loading-spinner" style="margin: 0 auto 16px; width: 24px; height: 24px;"></div>
+        <p>Loading attendance records...</p>
+      </div>
+    `;
 
-                // Determine which records to load
                 const params = {};
                 if (currentUser.role !== 'admin') {
                     params.employee_id = currentUser.id;
@@ -2315,81 +2318,109 @@
 
                 const result = await apiCall('attendance-records', 'GET', params);
 
-                if (result.success && result.records && result.records.length > 0) {
-                    renderAttendanceTable(result.records);
+                const rows = (result && result.success && Array.isArray(result.records)) ? result.records : [];
+                if (rows.length > 0) {
+                    renderAttendanceTable(rows);
                 } else {
                     recordsContent.innerHTML = `
-                        <div class="text-center" style="padding: 40px;">
-                            <p style="color: var(--gray-500);">No attendance records found.</p>
-                        </div>
-                    `;
+        <div class="text-center" style="padding: 40px;">
+          <p style="color: var(--gray-500);">No attendance records found.</p>
+        </div>
+      `;
                 }
             } catch (error) {
                 console.error('Error loading records:', error);
                 document.getElementById('recordsContent').innerHTML = `
-                    <div class="text-center" style="padding: 40px;">
-                        <p style="color: var(--error-color);">Error loading records. Please try again.</p>
-                    </div>
-                `;
+      <div class="text-center" style="padding: 40px;">
+        <p style="color: var(--error-color);">Error loading records. Please try again.</p>
+      </div>
+    `;
             }
         }
+
 
         function renderAttendanceTable(records) {
             const recordsContent = document.getElementById('recordsContent');
 
-            const tableHeaders = currentUser.role === 'admin' ?
-                ['Employee', 'Department', 'Date', 'Check In', 'Check Out', 'Hours', 'Type', 'Status', 'Office'] :
-                ['Date', 'Check In', 'Check Out', 'Hours', 'Type', 'Status', 'Office', 'Photo'];
+            const tableHeaders = (currentUser.role === 'admin')
+                ? ['Employee', 'Department', 'Date', 'Check In', 'Check Out', 'Hours', 'Type', 'Status', 'Office', 'Photo']
+                : ['Date', 'Check In', 'Check Out', 'Hours', 'Type', 'Status', 'Office', 'Photo'];
 
-            const tableHTML = `
-                <table class="records-table">
-                    <thead>
-                        <tr>
-                            ${tableHeaders.map(header => `<th>${header}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${records.map(record => {
-                const totalHours = record.total_hours ?
-                    `${Math.floor(record.total_hours)}h ${Math.round((record.total_hours % 1) * 60)}m` :
-                    '-';
+            const rowsHtml = records.map(r => {
+                const totalHours = (typeof r.total_hours === 'number')
+                    ? `${Math.floor(r.total_hours)}h ${Math.round((r.total_hours % 1) * 60)}m`
+                    : '-';
 
-                const statusClass = `status-${record.status.replace('_', '')}`;
-                const statusText = record.status.replace('_', ' ').toUpperCase();
+                const statusClass = `status-${String(r.status || '').replace('_', '')}`;
+                const statusText = String(r.status || '').replace('_', ' ').toUpperCase();
 
-                const commonCells = [
-                    record.date,
-                    record.check_in_time || '-',
-                    record.check_out_time || '-',
-                    totalHours,
-                    record.type.toUpperCase(),
-                    `<span class="status-badge ${statusClass}">${statusText}</span>`,
-                    record.office_name || '-'
-                ];
+                const photoCell = r.photo_url
+                    ? `<img src="${r.photo_url}"
+               alt="photo"
+               style="width:64px;height:64px;border-radius:12px;object-fit:cover;aspect-ratio:1/1;">`
+                    : '-';
+
+                const common = `
+      <td>${r.date || '-'}</td>
+      <td>${r.check_in_time || '-'}</td>
+      <td>${r.check_out_time || '-'}</td>
+      <td>${totalHours}</td>
+      <td>${(r.type || '').toUpperCase()}</td>
+      <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+      <td>${r.office_name || '-'}</td>
+      <td>${photoCell}</td>
+    `;
 
                 if (currentUser.role === 'admin') {
                     return `<tr>
-                                    <td>${record.employee_name}</td>
-                                    <td>${record.department}</td>
-                                    ${commonCells.map(cell => `<td>${cell}</td>`).join('')}
-                                </tr>`;
+        <td>${r.employee_name || ''}</td>
+        <td>${r.department || ''}</td>
+        ${common}
+      </tr>`;
                 } else {
-                    return `<tr>
-                                    ${commonCells.map(cell => `<td>${cell}</td>`).join('')}
-                                </tr>`;
+                    return `<tr>${common}</tr>`;
                 }
-            }).join('')}
-                    </tbody>
-                </table>
-            `;
+            }).join('');
 
-            recordsContent.innerHTML = tableHTML;
+            recordsContent.innerHTML = `
+    <table class="records-table">
+      <thead>
+        <tr>${tableHeaders.map(h => `<th>${h}</th>`).join('')}</tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  `;
         }
 
-        /* ===== Admin panel ===== */
 
-        // --- tiny escape helper for table cells
-        function h(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+        /* 3) Helper: find a usable photo URL from various shapes your API might return.
+              Priority:
+              - record.photo_url (already provided by backend)
+              - check_in_photo / check_out_photo (data URL, http/https, relative path, or raw base64)
+        */
+        function resolvePhotoUrl(r) {
+            const candidate =
+                r.photo_url ||
+                r.check_in_photo ||
+                r.check_out_photo ||
+                null;
+
+            if (!candidate) return null;
+
+            // If it already looks like a URL or data URL, just use it
+            if (/^(https?:|data:|blob:)/i.test(candidate)) return candidate;
+
+            // Raw base64 (no data: prefix) → wrap it
+            const looksLikeBase64 = /^[A-Za-z0-9+/=\s]+$/.test(candidate) && candidate.length > 100;
+            if (looksLikeBase64) return `data:image/jpeg;base64,${candidate}`;
+
+            // Relative path on your server (e.g., "uploads/img123.jpg")
+            // Adjust prefix if your images live elsewhere.
+            if (!candidate.startsWith('/')) return `./${candidate}`;
+
+            return candidate; // absolute path starting with /
+        }
 
 
 
@@ -2761,7 +2792,6 @@
 
 
         async function exportToExcel() {
-            // hard gate
             if (!currentUser || currentUser.role !== 'admin') {
                 showNotification('Export feature is available for admin users only', 'warning');
                 return;
@@ -2770,11 +2800,9 @@
             try {
                 showNotification('Generating report...');
 
-                // Pull ALL records (admin export)
-                const res = await apiCall('attendance-records', 'GET', {}); // no employee_id -> all
+                const res = await apiCall('attendance-records', 'GET', {}); // admin: all records
                 if (!res || !res.success) {
                     showNotification('Export failed: API error', 'error');
-                    console.error('Export API error:', res);
                     return;
                 }
 
@@ -2784,7 +2812,7 @@
                     return;
                 }
 
-                // Normalize rows for the sheet
+                // Build rows for main sheet (no photo embedding)
                 const rows = records.map(r => ({
                     'Employee Name': r.employee_name || '',
                     'Department': r.department || '',
@@ -2795,38 +2823,29 @@
                     'Type': (r.type || '').toUpperCase(),
                     'Status': (r.status || '').replace('_', ' ').toUpperCase(),
                     'Office': r.office_name || '',
-                    'Photo URL': r.photo_url || '' // keep URL; embedding needs Pro version of SheetJS
+                    'Photo (data URL)': r.photo_url || ''   // <- photo column (data URL)
                 }));
 
-                // Create workbook
                 const wb = XLSX.utils.book_new();
-
-                // Sheet 1: Attendance
                 const ws1 = XLSX.utils.json_to_sheet(rows, { origin: 'A1' });
                 XLSX.utils.book_append_sheet(wb, ws1, 'Attendance');
 
-                // Sheet 2: Photos (clickable)
-                const photoRows = rows
-                    .filter(r => r['Photo URL'])
-                    .map(r => ({
-                        'Employee Name': r['Employee Name'],
-                        'Date': r['Date'],
-                        'Photo URL': r['Photo URL']
-                    }));
+                // Also add a light "Photos" sheet listing only photo URLs for convenience
+                const photoRows = records
+                    .filter(r => r.photo_url)
+                    .map(r => ({ 'Employee': r.employee_name || '', 'Date': r.date || '', 'Photo (data URL)': r.photo_url }));
 
                 if (photoRows.length > 0) {
                     const ws2 = XLSX.utils.json_to_sheet(photoRows, { origin: 'A1' });
                     XLSX.utils.book_append_sheet(wb, ws2, 'Photos');
                 }
 
-                // Filename
                 const today = new Date();
                 const yyyy = today.getFullYear();
                 const mm = String(today.getMonth() + 1).padStart(2, '0');
                 const dd = String(today.getDate()).padStart(2, '0');
                 const filename = `attendance_report_${yyyy}-${mm}-${dd}.xlsx`;
 
-                // Write file
                 XLSX.writeFile(wb, filename);
                 showNotification('Report exported successfully!');
             } catch (err) {
@@ -2834,6 +2853,7 @@
                 showNotification('Error exporting data', 'error');
             }
         }
+
 
 
 

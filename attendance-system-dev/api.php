@@ -279,11 +279,19 @@ class AttendanceManager
     public function getAttendanceRecords($employeeId = null, $startDate = null, $endDate = null)
     {
         try {
-            $q = "SELECT ar.*, e.name as employee_name, e.department, ol.name as office_name, ol.address as office_address
-                FROM attendance_records ar
-                JOIN employees e ON ar.employee_id = e.id
-                LEFT JOIN office_locations ol ON ar.office_id = ol.id
-                WHERE 1=1";
+            $q = "SELECT 
+        ar.*,
+        e.name AS employee_name,
+        e.department,
+        ol.name AS office_name,
+        ol.address AS office_address,
+        /* expose one convenient photo field for the UI */
+        COALESCE(ar.check_in_photo, ar.check_out_photo) AS photo_url
+      FROM attendance_records ar
+      JOIN employees e ON ar.employee_id = e.id
+      LEFT JOIN office_locations ol ON ar.office_id = ol.id
+      WHERE 1=1";
+
             $p = [];
             if ($employeeId) {
                 $q .= " AND ar.employee_id=:e";
@@ -301,12 +309,23 @@ class AttendanceManager
             $st = $this->db->prepare($q);
             $st->execute($p);
             $rows = $st->fetchAll();
+            // after decoding check_in_location / check_out_location
             foreach ($rows as &$r) {
                 if (!empty($r['check_in_location']))
                     $r['check_in_location'] = json_decode($r['check_in_location'], true);
                 if (!empty($r['check_out_location']))
                     $r['check_out_location'] = json_decode($r['check_out_location'], true);
+
+                // Add photo URL: prefer check_out_photo then check_in_photo, or null
+                if (!empty($r['check_out_photo'])) {
+                    $r['photo_url'] = $r['check_out_photo']; // likely a data URL stored in DB
+                } elseif (!empty($r['check_in_photo'])) {
+                    $r['photo_url'] = $r['check_in_photo'];
+                } else {
+                    $r['photo_url'] = null;
+                }
             }
+
             return ['success' => true, 'records' => $rows];
         } catch (PDOException $e) {
             error_log("Records error: " . $e->getMessage());
