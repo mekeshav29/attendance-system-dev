@@ -989,6 +989,10 @@
                 <div class="card">
                     <h3 style="margin-bottom:12px;">Add New Office</h3>
                     <div class="form-group">
+                        <label class="form-label">Office ID</label>
+                        <input id="newOfficeId" class="form-control" placeholder="e.g., 106 or HQ (must be unique)">
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Office Name</label>
                         <input id="newOfficeName" class="form-control" placeholder="e.g., Head Office">
                     </div>
@@ -2509,19 +2513,20 @@
             const msg = document.getElementById('addOfficeMsg');
             msg.textContent = '';
 
+            const id = document.getElementById('newOfficeId').value.trim();
             const name = document.getElementById('newOfficeName').value.trim();
             const address = document.getElementById('newOfficeAddress').value.trim();
             const lat = parseFloat(document.getElementById('newOfficeLat').value);
             const lng = parseFloat(document.getElementById('newOfficeLng').value);
             const radius = parseInt(document.getElementById('newOfficeRadius').value, 10);
 
-            if (!name) return msg.textContent = 'Office name is required';
+            if (!id||!name) return msg.textContent = 'Office Id and name is required';
             if (Number.isNaN(lat) || Number.isNaN(lng) || Number.isNaN(radius)) {
                 msg.textContent = 'Latitude, longitude and radius are required and must be numbers';
                 return;
             }
 
-            const payload = { name, address, latitude: lat, longitude: lng, radius_meters: radius };
+            const payload = {id, name, address, latitude: lat, longitude: lng, radius_meters: radius };
             const endpoint = adminOfficeEditId ? `office/${adminOfficeEditId}` : 'office';
             const res = await apiCall(endpoint, 'POST', payload);
 
@@ -2541,6 +2546,8 @@
 
         function clearOfficeForm() {
             adminOfficeEditId = null;
+            document.getElementById('newOfficeId').value = '';
+            document.getElementById('newOfficeId').disabled = false;
             document.getElementById('newOfficeName').value = '';
             document.getElementById('newOfficeAddress').value = '';
             document.getElementById('newOfficeLat').value = '';
@@ -2557,6 +2564,8 @@
             }
             const o = res.office;
             adminOfficeEditId = o.id;
+            document.getElementById('newOfficeId').value = o.id || ''
+            document.getElementById('newOfficeId').disabled = true;
             document.getElementById('newOfficeName').value = o.name || '';
             document.getElementById('newOfficeAddress').value = o.address || '';
             document.getElementById('newOfficeLat').value = o.latitude ?? '';

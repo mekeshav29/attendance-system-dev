@@ -361,17 +361,6 @@ class AttendanceManager
             return ['current_count' => 0, 'max_limit' => 1, 'can_request' => false];
         }
     }
-    public function deleteOffice($id)
-    {
-        if (!$id)
-            return ['success' => false, 'message' => 'Missing id'];
-        $st = $this->db->prepare("DELETE FROM office_locations WHERE id=:id");
-        $st->execute([':id' => $id]);
-        return ['success' => true];
-    }
-
-
-
 }
 
 // ===================================================
@@ -393,67 +382,65 @@ class APIRouter
         $this->attendanceManager = new AttendanceManager($this->db);
     }
 
-public function handleRequest()
-{
-    $method = $_SERVER['REQUEST_METHOD'];
-    $path = $this->getPath();
+    public function handleRequest()
+    {
+        $method = $_SERVER['REQUEST_METHOD'];
+        $path = $this->getPath();
 
-    // Handle admin routes first (will echo+exit on match)
-    $this->handleAdminRoutes($path, $method);
+        // Handle admin routes first
+        $this->handleAdminRoutes($path, $method);
 
-    try {
-        switch ($path) {
-            case 'login':
-                ($method === 'POST') ? $this->handleLogin() : $this->methodNotAllowed();
-                break;
-            case 'register':
-                ($method === 'POST') ? $this->handleRegister() : $this->methodNotAllowed();
-                break;
+        try {
+            switch ($path) {
+                case 'login':
+                    ($method === 'POST') ? $this->handleLogin() : $this->methodNotAllowed();
+                    break;
+                case 'register':
+                    ($method === 'POST') ? $this->handleRegister() : $this->methodNotAllowed();
+                    break;
 
-            // Offices (public/admin common endpoints)
-            case 'offices-all':         // returns all offices (admin UI uses this)
-            case 'offices':             // used by many front-end calls (filtered by dept)
-            case 'office':              // create or list depending on method/usage
-            case (preg_match('#^office/([0-9A-Za-z_-]+)$#', $path) ? true : false):
-                // Delegate all office-related logic to the dedicated handler
-                $this->handleOfficeRoutes($path, $method);
-                break;
+                // Office routes - delegate to dedicated handler
+                case 'offices-all':
+                case 'offices':
+                case 'office':
+                case (preg_match('#^office/(\d+)$#', $path) ? true : false):
+                    $this->handleOfficeRoutes($path, $method);
+                    break;
 
-            case 'check-location':
-                ($method === 'POST') ? $this->handleCheckLocation() : $this->methodNotAllowed();
-                break;
-            case 'mark-attendance':
-                ($method === 'POST') ? $this->handleMarkAttendance() : $this->methodNotAllowed();
-                break;
-            case 'check-out':
-                ($method === 'POST') ? $this->handleCheckOut() : $this->methodNotAllowed();
-                break;
-            case 'today-attendance':
-                ($method === 'GET') ? $this->handleTodayAttendance() : $this->methodNotAllowed();
-                break;
-            case 'attendance-records':
-                ($method === 'GET') ? $this->handleAttendanceRecords() : $this->methodNotAllowed();
-                break;
-            case 'monthly-stats':
-                ($method === 'GET') ? $this->handleMonthlyStats() : $this->methodNotAllowed();
-                break;
-            case 'wfh-eligibility':
-                ($method === 'GET') ? $this->handleWFHEligibility() : $this->methodNotAllowed();
-                break;
-            case 'wfh-request':
-                ($method === 'POST') ? $this->handleWFHRequest() : $this->methodNotAllowed();
-                break;
+                case 'check-location':
+                    ($method === 'POST') ? $this->handleCheckLocation() : $this->methodNotAllowed();
+                    break;
+                case 'mark-attendance':
+                    ($method === 'POST') ? $this->handleMarkAttendance() : $this->methodNotAllowed();
+                    break;
+                case 'check-out':
+                    ($method === 'POST') ? $this->handleCheckOut() : $this->methodNotAllowed();
+                    break;
+                case 'today-attendance':
+                    ($method === 'GET') ? $this->handleTodayAttendance() : $this->methodNotAllowed();
+                    break;
+                case 'attendance-records':
+                    ($method === 'GET') ? $this->handleAttendanceRecords() : $this->methodNotAllowed();
+                    break;
+                case 'monthly-stats':
+                    ($method === 'GET') ? $this->handleMonthlyStats() : $this->methodNotAllowed();
+                    break;
+                case 'wfh-eligibility':
+                    ($method === 'GET') ? $this->handleWFHEligibility() : $this->methodNotAllowed();
+                    break;
+                case 'wfh-request':
+                    ($method === 'POST') ? $this->handleWFHRequest() : $this->methodNotAllowed();
+                    break;
 
-            default:
-                $this->notFound();
-                break;
+                default:
+                    $this->notFound();
+                    break;
+            }
+        } catch (Exception $e) {
+            error_log("API Error: " . $e->getMessage());
+            $this->internalServerError();
         }
-    } catch (Exception $e) {
-        error_log("API Error: " . $e->getMessage());
-        $this->internalServerError();
     }
-}
-
 
     private function getPath()
     {
@@ -501,7 +488,6 @@ public function handleRequest()
         return false;
     }
 
-
     // ================= Admin routes =================
     private function handleAdminRoutes($path, $method)
     {
@@ -518,24 +504,22 @@ public function handleRequest()
         }
 
         // User GET/POST/DELETE
-        // GET/POST/DELETE  /admin-user/{id}
         if (preg_match('#^admin-user/([0-9]+)$#', $path, $m)) {
             $id = (int) $m[1];
 
             if ($method === 'GET') {
-                // fetch one user (include phone + is_active so UI can show/edit them)
                 $st = $pdo->prepare("
-            SELECT id, username, name, email, phone, department, role, is_active
-            FROM employees
-            WHERE id = :id
-        ");
+                    SELECT id, username, name, email, phone, department, role, is_active
+                    FROM employees
+                    WHERE id = :id
+                ");
                 $st->execute([':id' => $id]);
                 $user = $st->fetch(PDO::FETCH_ASSOC);
                 echo json_encode(['success' => true, 'user' => $user]);
                 exit;
             }
 
-            // Accept DELETE or POST?_method=DELETE
+            // DELETE user
             if ($this->isDelete($method)) {
                 $st = $pdo->prepare("DELETE FROM employees WHERE id = :id");
                 $st->execute([':id' => $id]);
@@ -544,363 +528,79 @@ public function handleRequest()
             }
 
             if ($method === 'POST') {
-    // update (front-end sends JSON)
-    $data = $this->getJsonInput();
+                $data = $this->getJsonInput();
 
-    // Basic validation: at least name/email/phone present (optional)
-    $name = $data['name'] ?? null;
-    $email = $data['email'] ?? null;
-    $phone = $data['phone'] ?? null;
-    $department = $data['department'] ?? null;
-    $role = $data['role'] ?? 'employee';
-    $is_active = isset($data['is_active']) ? (int) !!$data['is_active'] : 1;
-    $primary_office = $data['primary_office'] ?? null;
-    $password = isset($data['password']) ? trim($data['password']) : null;
+                $name = $data['name'] ?? null;
+                $email = $data['email'] ?? null;
+                $phone = $data['phone'] ?? null;
+                $department = $data['department'] ?? null;
+                $role = $data['role'] ?? 'employee';
+                $is_active = isset($data['is_active']) ? (int) !!$data['is_active'] : 1;
+                $primary_office = $data['primary_office'] ?? null;
+                $password = isset($data['password']) ? trim($data['password']) : null;
 
-    try {
-        if ($password) {
-            // update password + other fields
-            $hash = password_hash($password, PASSWORD_DEFAULT);
-            $st = $pdo->prepare("
-                UPDATE employees
-                   SET name = :name,
-                       email = :email,
-                       phone = :phone,
-                       department = :department,
-                       role = :role,
-                       is_active = :is_active,
-                       primary_office = :primary_office,
-                       password = :password
-                 WHERE id = :id
-            ");
-            $st->execute([
-                ':name' => $name,
-                ':email' => $email,
-                ':phone' => $phone,
-                ':department' => $department,
-                ':role' => $role,
-                ':is_active' => $is_active,
-                ':primary_office' => $primary_office,
-                ':password' => $hash,
-                ':id' => $id,
-            ]);
-        } else {
-            // update all except password
-            $st = $pdo->prepare("
-                UPDATE employees
-                   SET name = :name,
-                       email = :email,
-                       phone = :phone,
-                       department = :department,
-                       role = :role,
-                       is_active = :is_active,
-                       primary_office = :primary_office
-                 WHERE id = :id
-            ");
-            $st->execute([
-                ':name' => $name,
-                ':email' => $email,
-                ':phone' => $phone,
-                ':department' => $department,
-                ':role' => $role,
-                ':is_active' => $is_active,
-                ':primary_office' => $primary_office,
-                ':id' => $id,
-            ]);
-        }
-
-        echo json_encode(['success' => true, 'message' => 'User updated']);
-        exit;
-    } catch (PDOException $e) {
-        error_log("Update admin-user error: " . $e->getMessage());
-        echo json_encode(['success' => false, 'message' => 'Failed to update user: ' . $e->getMessage()]);
-        exit;
-    }
-}
-
-
-        // Offices list (only active)
-// GET /offices (and /offices-all) — supports ?active=1 and ?department=HR|IT|...
-        if ($path === 'offices' || $path === 'offices-all') {
-            $pdo = $this->db;
-            $active = isset($_GET['active']) ? (int) $_GET['active'] : 1;  // default: only active
-            $dept = isset($_GET['department']) ? trim($_GET['department']) : '';
-
-            try {
-                if ($dept !== '') {
-                    // Use the stored proc that already enforces ol.is_active = TRUE
-                    $st = $pdo->prepare("CALL GetAccessibleOffices(:d)");
-                    $st->execute([':d' => $dept]);
-                    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-                    // If someone passed active=0, allow all; otherwise keep just active (proc already does this)
-                    if ($active !== 1) {
-                        // nothing extra to do; proc only returns active anyway
+                try {
+                    if ($password) {
+                        $hash = password_hash($password, PASSWORD_DEFAULT);
+                        $st = $pdo->prepare("
+                            UPDATE employees
+                            SET name = :name,
+                                email = :email,
+                                phone = :phone,
+                                department = :department,
+                                role = :role,
+                                is_active = :is_active,
+                                primary_office = :primary_office,
+                                password = :password
+                            WHERE id = :id
+                        ");
+                        $st->execute([
+                            ':name' => $name,
+                            ':email' => $email,
+                            ':phone' => $phone,
+                            ':department' => $department,
+                            ':role' => $role,
+                            ':is_active' => $is_active,
+                            ':primary_office' => $primary_office,
+                            ':password' => $hash,
+                            ':id' => $id,
+                        ]);
+                    } else {
+                        $st = $pdo->prepare("
+                            UPDATE employees
+                            SET name = :name,
+                                email = :email,
+                                phone = :phone,
+                                department = :department,
+                                role = :role,
+                                is_active = :is_active,
+                                primary_office = :primary_office
+                            WHERE id = :id
+                        ");
+                        $st->execute([
+                            ':name' => $name,
+                            ':email' => $email,
+                            ':phone' => $phone,
+                            ':department' => $department,
+                            ':role' => $role,
+                            ':is_active' => $is_active,
+                            ':primary_office' => $primary_office,
+                            ':id' => $id,
+                        ]);
                     }
-                } else {
-                    // No department: return either active or all
-                    $sql = "SELECT id, name, address, latitude, longitude, radius_meters, is_active
-                    FROM office_locations";
-                    if ($active === 1)
-                        $sql .= " WHERE is_active = 1";
-                    $sql .= " ORDER BY id DESC";
-                    $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-                }
 
-                echo json_encode(['success' => true, 'offices' => $rows]);
-                exit;
-            } catch (PDOException $e) {
-                error_log('Offices route error: ' . $e->getMessage());
-                echo json_encode(['success' => false, 'message' => 'Failed to fetch offices']);
-                exit;
-            }
-        }
-
-        // In "Create office"
-        if ($path === 'office' && $method === 'POST') {
-            $d = $this->getJsonInput();
-
-            if (empty($d['name'])) {
-                echo json_encode(['success' => false, 'message' => 'Office name is required']);
-                exit;
-            }
-
-            $lat = (isset($d['latitude']) && $d['latitude'] !== '') ? $d['latitude'] : null;
-            $lng = (isset($d['longitude']) && $d['longitude'] !== '') ? $d['longitude'] : null;
-            $rad = (isset($d['radius_meters']) && $d['radius_meters'] !== '')
-                ? $d['radius_meters']
-                : ((isset($d['radius']) && $d['radius'] !== '') ? $d['radius'] : null);
-
-            // --- FIX: Add try/catch block for safety ---
-            try {
-                $st = $pdo->prepare(
-                    "INSERT INTO office_locations
-       (name, address, latitude, longitude, radius_meters, is_active, created_at)
-     VALUES (:n, :a, :lat, :lng, :r, 1, NOW())"
-                );
-                $st->execute([
-                    ':n' => $d['name'],
-                    ':a' => $d['address'] ?? null,
-                    ':lat' => $lat,
-                    ':lng' => $lng,
-                    ':r' => $rad
-                ]);
-
-                // --- THIS IS THE FIX ---
-                // Get the ID of the new office
-                $officeId = $pdo->lastInsertId();
-
-                // Grant access to all departments so it appears in the "Mark Attendance" list
-                $depts = ['IT', 'HR', 'Surveyors', 'Accounts', 'Growth', 'Others'];
-                $ins = $pdo->prepare("INSERT IGNORE INTO department_office_access (department, office_id) VALUES (:d, :o)");
-                foreach ($depts as $dpt) {
-                    $ins->execute([':d' => $dpt, ':o' => $officeId]);
-                }
-                // --- End of Fix ---
-
-                echo json_encode(['success' => true, 'message' => 'Office created', 'office_id' => $officeId]);
-                exit;
-
-                // --- FIX: Add catch block ---
-            } catch (PDOException $e) {
-                error_log("Create office error: " . $e->getMessage());
-                echo json_encode(['success' => false, 'message' => 'Failed to create office: ' . $e->getMessage()]);
-                exit;
-            }
-        }
-        // Office GET/POST(update)/DELETE
-        if (preg_match('#^office/([0-9A-Za-z_-]+)$#', $path, $m)) {
-            $id = (int) $m[1];
-
-            if ($method === 'GET') {
-                $st = $pdo->prepare("SELECT id, name, address, latitude, longitude, radius_meters, is_active FROM office_locations WHERE id=:id");
-                $st->execute([':id' => $id]);
-                echo json_encode(['success' => true, 'office' => $st->fetch(PDO::FETCH_ASSOC)]);
-                exit;
-            }
-
-            // Soft delete (or switch to hard delete if you prefer)
-            if ($this->isDelete($method)) {
-                try {
-                    $st = $pdo->prepare("UPDATE office_locations SET is_active = 0, updated_at = NOW() WHERE id=:id");
-                    $st->execute([':id' => $id]);
-                    echo json_encode(['success' => true, 'message' => 'Office deleted']);
+                    echo json_encode(['success' => true, 'message' => 'User updated']);
                     exit;
                 } catch (PDOException $e) {
-                    error_log("Delete office error: " . $e->getMessage());
-                    echo json_encode(['success' => false, 'message' => 'Failed to delete office: ' . $e->getMessage()]);
+                    error_log("Update admin-user error: " . $e->getMessage());
+                    echo json_encode(['success' => false, 'message' => 'Failed to update user: ' . $e->getMessage()]);
                     exit;
                 }
             }
-
-            if ($method === 'POST') {
-                $d = $this->getJsonInput();
-
-                $name = isset($d['name']) ? trim($d['name']) : null;
-                $addr = isset($d['address']) ? trim($d['address']) : null;
-                $lat = (isset($d['latitude']) && $d['latitude'] !== '' && $d['latitude'] !== null) ? (float) $d['latitude'] : null;
-                $lng = (isset($d['longitude']) && $d['longitude'] !== '' && $d['longitude'] !== null) ? (float) $d['longitude'] : null;
-                $rad = (isset($d['radius_meters']) && $d['radius_meters'] !== '' && $d['radius_meters'] !== null)
-                    ? (float) $d['radius_meters']
-                    : ((isset($d['radius']) && $d['radius'] !== '' && $d['radius'] !== null) ? (float) $d['radius'] : null);
-
-                try {
-                    $st = $pdo->prepare(
-                        "UPDATE office_locations
-                   SET name=:n, address=:a, latitude=:lat, longitude=:lng, radius_meters=:r, updated_at=NOW()
-                 WHERE id=:id"
-                    );
-                    $st->execute([
-                        ':n' => $name,
-                        ':a' => $addr,
-                        ':lat' => $lat,
-                        ':lng' => $lng,
-                        ':r' => $rad,
-                        ':id' => $id
-                    ]);
-                    echo json_encode(['success' => true, 'message' => 'Office updated']);
-                    exit;
-                } catch (PDOException $e) {
-                    error_log("Update office error: " . $e->getMessage());
-                    echo json_encode(['success' => false, 'message' => 'Failed to update office: ' . $e->getMessage()]);
-                    exit;
-                }
-            }
-
-            $this->methodNotAllowed();
-            exit;
-        }
-
-        }}
-
-    // ----------- non-admin handlers -----------
-    private function handleLogin()
-    {
-        $data = $this->getJsonInput();
-        if (empty($data['username']) || empty($data['password']))
-            $this->badRequest('Username and password are required');
-        echo json_encode($this->auth->login($data['username'], $data['password']));
-    }
-    private function handleRegister()
-    {
-        $data = $this->getJsonInput();
-        echo json_encode($this->auth->register($data));
-    }
-    private function handleGetOffices()
-    {
-        $department = $_GET['department'] ?? '';
-        if (empty($department))
-            $this->badRequest('Department parameter is required');
-        echo json_encode($this->officeManager->getAccessibleOffices($department));
-    }
-    private function handleCheckLocation()
-    {
-        $d = $this->getJsonInput();
-        foreach (['latitude', 'longitude', 'office_id'] as $f) {
-            if (!isset($d[$f]))
-                $this->badRequest("Field '$f' is required");
-        }
-        echo json_encode($this->officeManager->checkLocationProximity($d['latitude'], $d['longitude'], $d['office_id']));
-    }
-    private function handleMarkAttendance()
-    {
-        $d = $this->getJsonInput();
-        foreach (['employee_id', 'date', 'check_in', 'type', 'status'] as $f) {
-            if (!isset($d[$f]))
-                $this->badRequest("Field '$f' is required");
-        }
-        echo json_encode($this->attendanceManager->markAttendance($d['employee_id'], $d['date'], $d['check_in'], $d['type'], $d['status'], $d['office_id'] ?? null, $d['location'] ?? null, $d['photo'] ?? null));
-    }
-    private function handleCheckOut()
-    {
-        $d = $this->getJsonInput();
-        foreach (['employee_id', 'date', 'check_out'] as $f) {
-            if (!isset($d[$f]))
-                $this->badRequest("Field '$f' is required");
-        }
-        echo json_encode($this->attendanceManager->checkOut($d['employee_id'], $d['date'], $d['check_out'], $d['location'] ?? null, $d['photo'] ?? null));
-        exit;
-    }
-    private function handleTodayAttendance()
-    {
-        $eid = $_GET['employee_id'] ?? '';
-        if (empty($eid))
-            $this->badRequest('Employee ID is required');
-        echo json_encode($this->attendanceManager->getTodayAttendance($eid));
-    }
-    private function handleAttendanceRecords()
-    {
-        $eid = $_GET['employee_id'] ?? null;
-        $sd = $_GET['start_date'] ?? null;
-        $ed = $_GET['end_date'] ?? null;
-        echo json_encode($this->attendanceManager->getAttendanceRecords($eid, $sd, $ed));
-    }
-    private function handleMonthlyStats()
-    {
-        $eid = $_GET['employee_id'] ?? '';
-        $y = $_GET['year'] ?? null;
-        $m = $_GET['month'] ?? null;
-        if (empty($eid))
-            $this->badRequest('Employee ID is required');
-        echo json_encode($this->attendanceManager->getMonthlyStats($eid, $y, $m));
-    }
-    private function handleWFHEligibility()
-    {
-        $eid = $_GET['employee_id'] ?? '';
-        $dt = $_GET['date'] ?? date('Y-m-d');
-        if (empty($eid))
-            $this->badRequest('Employee ID is required');
-        echo json_encode($this->attendanceManager->checkWFHEligibility($eid, $dt));
-    }
-
-    // HTTP helpers
-    private function badRequest($message = 'Bad Request')
-    {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => $message]);
-        exit;
-    }
-    private function notFound($message = 'Endpoint not found')
-    {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'message' => $message]);
-        exit;
-    }
-    private function methodNotAllowed($message = 'Method not allowed')
-    {
-        http_response_code(405);
-        echo json_encode(['success' => false, 'message' => $message]);
-        exit;
-    }
-    private function internalServerError($message = 'Internal server error')
-    {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => $message]);
-        exit;
-    }
-
-    private function handleWFHRequest()
-    {
-        $d = $this->getJsonInput();
-        $eid = $d['employee_id'] ?? null;
-        $date = $d['date'] ?? date('Y-m-d');
-        $reason = $d['reason'] ?? null;
-
-        if (!$eid)
-            $this->badRequest('Employee ID is required');
-
-        try {
-            // Make sure table exists or create it once in SQL (see SQL section below)
-            $st = $this->db->prepare("
-            INSERT INTO wfh_requests (employee_id, request_date, reason, status, created_at)
-            VALUES (:e, :dt, :r, 'pending', NOW())
-        ");
-            $st->execute([':e' => $eid, ':dt' => $date, ':r' => $reason]);
-            echo json_encode(['success' => true, 'message' => 'Request submitted']);
-        } catch (PDOException $e) {
-            error_log('WFH request error: ' . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Failed to submit request']);
         }
     }
+
+    // ================= Office routes handler =================
     private function handleOfficeRoutes(string $path, string $method)
     {
         $pdo = $this->db;
@@ -909,50 +609,52 @@ public function handleRequest()
             return;
         }
 
-        // 2.1) List offices (GET /offices or /offices-all)
+        // List offices (GET /offices or /offices-all)
         if ($path === 'offices-all' || $path === 'offices') {
-            $active = isset($_GET['active']) ? (int) $_GET['active'] : 1; // Default to active offices
+            $active = isset($_GET['active']) ? (int) $_GET['active'] : 1;
             $department = $_GET['department'] ?? null;
 
             try {
-                if ($department) {
-                    // Offices accessible to a specific department
-                    $sql = "SELECT ol.id, ol.name, ol.address, ol.latitude, ol.longitude, ol.radius_meters, ol.is_active
-                    FROM office_locations ol
-                    INNER JOIN department_office_access doa ON doa.office_id = ol.id
-                    WHERE doa.department = :dept";
-                    if ($active === 1)
-                        $sql .= " AND ol.is_active = 1";
-                    $sql .= " ORDER BY ol.id DESC";
-
-                    $st = $pdo->prepare($sql);
+                if ($department && $department !== '') {
+                    // Use stored procedure for department-specific offices
+                    $st = $pdo->prepare("CALL GetAccessibleOffices(:dept)");
                     $st->execute([':dept' => $department]);
+                    $offices = $st->fetchAll(PDO::FETCH_ASSOC);
+                    $st->closeCursor();
                 } else {
-                    // All offices (for admin use)
-                    $sql = "SELECT id, name, address, latitude, longitude, radius_meters, is_active
-                    FROM office_locations";
-                    if ($active === 1)
-                        $sql .= " WHERE is_active = 1";
-                    $sql .= " ORDER BY id DESC";
+                    // All offices (for admin)
+                    $sql = "SELECT id, name, address, latitude, longitude, radius_meters, is_active 
+                            FROM office_locations 
+                            WHERE 1=1";
 
-                    $st = $pdo->query($sql);
+                    if ($active === 1) {
+                        $sql .= " AND is_active = 1";
+                    }
+
+                    $sql .= " ORDER BY name ASC";
+                    $st = $pdo->prepare($sql);
+                    $st->execute();
+                    $offices = $st->fetchAll(PDO::FETCH_ASSOC);
                 }
 
-                echo json_encode(['success' => true, 'offices' => $st->fetchAll(PDO::FETCH_ASSOC)]);
+                echo json_encode(['success' => true, 'offices' => $offices]);
                 exit;
             } catch (PDOException $e) {
                 error_log("Get Offices Error: " . $e->getMessage());
-                $this->internalServerError('Failed to fetch offices');
+                echo json_encode(['success' => false, 'message' => 'Failed to fetch offices: ' . $e->getMessage()]);
+                exit;
             }
         }
 
-
-        // 2.2) Create office (POST /office)
         if ($path === 'office' && $method === 'POST') {
             $d = $this->getJsonInput();
 
-            if (empty($d['name'])) {
-                $this->badRequest('Office name is required');
+            // --- ADD THIS LINE ---
+            $id = $d['id'] ?? null;
+
+            // --- UPDATE THIS VALIDATION ---
+            if (empty($d['name']) || empty($id)) {
+                $this->badRequest('Office ID and Office name are required');
             }
 
             $lat = (isset($d['latitude']) && $d['latitude'] !== '') ? (float) $d['latitude'] : null;
@@ -963,11 +665,15 @@ public function handleRequest()
 
             try {
                 // 1. Insert into office_locations
+                // --- UPDATE THIS SQL QUERY (ADD `id,` and `:id,`) ---
                 $st = $pdo->prepare(
-                    "INSERT INTO office_locations (name, address, latitude, longitude, radius_meters, is_active, created_at)
-                     VALUES (:n, :a, :lat, :lng, :r, 1, NOW())"
+                    "INSERT INTO office_locations (id, name, address, latitude, longitude, radius_meters, is_active, created_at)
+                     VALUES (:id, :n, :a, :lat, :lng, :r, 1, NOW())"
                 );
+
+                // --- UPDATE THIS EXECUTE ARRAY (ADD `:id`) ---
                 $st->execute([
+                    ':id' => $id,
                     ':n' => $d['name'] ?? null,
                     ':a' => $d['address'] ?? null,
                     ':lat' => $lat,
@@ -976,7 +682,8 @@ public function handleRequest()
                 ]);
 
                 // 2. Get the new ID
-                $officeId = $pdo->lastInsertId();
+                // --- REPLACE `lastInsertId()` ---
+                $officeId = $id;
 
                 // 3. FIX: Grant access to all departments by default
                 $depts = ['IT', 'HR', 'Surveyors', 'Accounts', 'Growth', 'Others'];
@@ -990,76 +697,229 @@ public function handleRequest()
 
             } catch (PDOException $e) {
                 error_log("Create Office Error: " . $e->getMessage());
+                // This will check for duplicate ID
+                if ($e->errorInfo[1] == 1062) {
+                    $this->badRequest('Failed to create office: That Office ID already exists.');
+                }
                 $this->internalServerError('Failed to create office: ' . $e->getMessage());
             }
         }
+        // Single office operations (GET, UPDATE, DELETE)
+        if (preg_match('#^office/(\d+)$#', $path, $m)) {
+            $id = (int) $m[1];
 
-        // 2.3) Single office routes: GET /office/{id}, POST update, DELETE
-        if (preg_match('#^office/([0-9A-Za-z_-]+)$#', $path, $m)) {
-            $id = $m[1];
-
-            // GET one office
+            // GET single office
             if ($method === 'GET') {
-                $st = $pdo->prepare("SELECT id, name, address, latitude, longitude, radius_meters, is_active
-                                 FROM office_locations WHERE id = :id");
-                $st->execute([':id' => $id]);
-                echo json_encode(['success' => true, 'office' => $st->fetch(PDO::FETCH_ASSOC)]);
-                exit;
-            }
-
-            // DELETE (Soft delete)
-            if ($this->isDelete($method)) {
                 try {
-                    $st = $pdo->prepare("UPDATE office_locations SET is_active = 0 WHERE id = :id");
+                    $st = $pdo->prepare(
+                        "SELECT id, name, address, latitude, longitude, radius_meters, is_active
+                         FROM office_locations 
+                         WHERE id = :id"
+                    );
                     $st->execute([':id' => $id]);
-                    echo json_encode(['success' => true, 'message' => 'Office deleted']);
+                    $office = $st->fetch(PDO::FETCH_ASSOC);
+
+                    if ($office) {
+                        echo json_encode(['success' => true, 'office' => $office]);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Office not found']);
+                    }
                     exit;
                 } catch (PDOException $e) {
-                    error_log("Delete office error: " . $e->getMessage());
-                    $this->internalServerError('Failed to delete office: ' . $e->getMessage());
+                    error_log("Get Office Error: " . $e->getMessage());
+                    echo json_encode(['success' => false, 'message' => 'Failed to fetch office']);
+                    exit;
                 }
             }
 
-            // POST update
+            // DELETE office
+            if ($this->isDelete($method)) {
+                try {
+                    // Soft delete (set is_active = 0)
+                    $st = $pdo->prepare("DELETE FROM office_locations WHERE id = :id");
+                    $st->execute([':id' => $id]);
+
+                    if ($st->rowCount() > 0) {
+                        echo json_encode(['success' => true, 'message' => 'Office deleted successfully']);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Office not found']);
+                    }
+                    exit;
+                } catch (PDOException $e) {
+                    error_log("Delete Office Error: " . $e->getMessage());
+                    echo json_encode(['success' => false, 'message' => 'Failed to delete office: ' . $e->getMessage()]);
+                    exit;
+                }
+            }
+
+            // UPDATE office (POST)
             if ($method === 'POST') {
                 $d = $this->getJsonInput();
 
-                $name = isset($d['name']) ? trim($d['name']) : null;
-                $addr = isset($d['address']) ? trim($d['address']) : null;
-                $lat = (isset($d['latitude']) && $d['latitude'] !== '' && $d['latitude'] !== null) ? (float) $d['latitude'] : null;
-                $lng = (isset($d['longitude']) && $d['longitude'] !== '' && $d['longitude'] !== null) ? (float) $d['longitude'] : null;
-                $rad = (isset($d['radius_meters']) && $d['radius_meters'] !== '' && $d['radius_meters'] !== null)
-                    ? (int) $d['radius_meters']
-                    : ((isset($d['radius']) && $d['radius'] !== '' && $d['radius'] !== null) ? (int) $d['radius'] : null);
-
                 try {
                     $st = $pdo->prepare(
-                        "UPDATE office_locations
-                         SET name = :n, address = :a, latitude = :lat, longitude = :lng, radius_meters = :r
+                        "UPDATE office_locations 
+                         SET name = :name, address = :address, latitude = :lat, longitude = :lng, 
+                             radius_meters = :radius, updated_at = NOW()
                          WHERE id = :id"
                     );
-                    $st->execute([
-                        ':n' => $name,
-                        ':a' => $addr,
-                        ':lat' => $lat,
-                        ':lng' => $lng,
-                        ':r' => $rad,
+
+                    $success = $st->execute([
+                        ':name' => $d['name'] ?? '',
+                        ':address' => $d['address'] ?? '',
+                        ':lat' => isset($d['latitude']) ? (float) $d['latitude'] : null,
+                        ':lng' => isset($d['longitude']) ? (float) $d['longitude'] : null,
+                        ':radius' => isset($d['radius_meters']) ? (int) $d['radius_meters'] : 100,
                         ':id' => $id
                     ]);
-                    echo json_encode(['success' => true, 'message' => 'Office updated']);
+
+                    if ($success && $st->rowCount() > 0) {
+                        echo json_encode(['success' => true, 'message' => 'Office updated successfully']);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Office not found or no changes made']);
+                    }
                     exit;
                 } catch (PDOException $e) {
-                    error_log("Update office error: " . $e->getMessage());
-                    $this->internalServerError('Failed to update office: ' . $e->getMessage());
+                    error_log("Update Office Error: " . $e->getMessage());
+                    echo json_encode(['success' => false, 'message' => 'Failed to update office: ' . $e->getMessage()]);
+                    exit;
                 }
             }
 
-            // If method not allowed on /office/{id}
             $this->methodNotAllowed();
         }
+    }
 
-        // If none matched
-        $this->notFound();
+    // ----------- non-admin handlers -----------
+    private function handleLogin()
+    {
+        $data = $this->getJsonInput();
+        if (empty($data['username']) || empty($data['password']))
+            $this->badRequest('Username and password are required');
+        echo json_encode($this->auth->login($data['username'], $data['password']));
+    }
+
+    private function handleRegister()
+    {
+        $data = $this->getJsonInput();
+        echo json_encode($this->auth->register($data));
+    }
+
+    private function handleCheckLocation()
+    {
+        $d = $this->getJsonInput();
+        foreach (['latitude', 'longitude', 'office_id'] as $f) {
+            if (!isset($d[$f]))
+                $this->badRequest("Field '$f' is required");
+        }
+        echo json_encode($this->officeManager->checkLocationProximity($d['latitude'], $d['longitude'], $d['office_id']));
+    }
+
+    private function handleMarkAttendance()
+    {
+        $d = $this->getJsonInput();
+        foreach (['employee_id', 'date', 'check_in', 'type', 'status'] as $f) {
+            if (!isset($d[$f]))
+                $this->badRequest("Field '$f' is required");
+        }
+        echo json_encode($this->attendanceManager->markAttendance($d['employee_id'], $d['date'], $d['check_in'], $d['type'], $d['status'], $d['office_id'] ?? null, $d['location'] ?? null, $d['photo'] ?? null));
+    }
+
+    private function handleCheckOut()
+    {
+        $d = $this->getJsonInput();
+        foreach (['employee_id', 'date', 'check_out'] as $f) {
+            if (!isset($d[$f]))
+                $this->badRequest("Field '$f' is required");
+        }
+        echo json_encode($this->attendanceManager->checkOut($d['employee_id'], $d['date'], $d['check_out'], $d['location'] ?? null, $d['photo'] ?? null));
+    }
+
+    private function handleTodayAttendance()
+    {
+        $eid = $_GET['employee_id'] ?? '';
+        if (empty($eid))
+            $this->badRequest('Employee ID is required');
+        echo json_encode($this->attendanceManager->getTodayAttendance($eid));
+    }
+
+    private function handleAttendanceRecords()
+    {
+        $eid = $_GET['employee_id'] ?? null;
+        $sd = $_GET['start_date'] ?? null;
+        $ed = $_GET['end_date'] ?? null;
+        echo json_encode($this->attendanceManager->getAttendanceRecords($eid, $sd, $ed));
+    }
+
+    private function handleMonthlyStats()
+    {
+        $eid = $_GET['employee_id'] ?? '';
+        $y = $_GET['year'] ?? null;
+        $m = $_GET['month'] ?? null;
+        if (empty($eid))
+            $this->badRequest('Employee ID is required');
+        echo json_encode($this->attendanceManager->getMonthlyStats($eid, $y, $m));
+    }
+
+    private function handleWFHEligibility()
+    {
+        $eid = $_GET['employee_id'] ?? '';
+        $dt = $_GET['date'] ?? date('Y-m-d');
+        if (empty($eid))
+            $this->badRequest('Employee ID is required');
+        echo json_encode($this->attendanceManager->checkWFHEligibility($eid, $dt));
+    }
+
+    private function handleWFHRequest()
+    {
+        $d = $this->getJsonInput();
+        $eid = $d['employee_id'] ?? null;
+        $date = $d['date'] ?? date('Y-m-d');
+        $reason = $d['reason'] ?? null;
+
+        if (!$eid)
+            $this->badRequest('Employee ID is required');
+
+        try {
+            $st = $this->db->prepare("
+                INSERT INTO wfh_requests (employee_id, request_date, reason, status, created_at)
+                VALUES (:e, :dt, :r, 'pending', NOW())
+            ");
+            $st->execute([':e' => $eid, ':dt' => $date, ':r' => $reason]);
+            echo json_encode(['success' => true, 'message' => 'Request submitted']);
+        } catch (PDOException $e) {
+            error_log('WFH request error: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Failed to submit request']);
+        }
+    }
+
+    // HTTP helpers
+    private function badRequest($message = 'Bad Request')
+    {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $message]);
+        exit;
+    }
+
+    private function notFound($message = 'Endpoint not found')
+    {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => $message]);
+        exit;
+    }
+
+    private function methodNotAllowed($message = 'Method not allowed')
+    {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => $message]);
+        exit;
+    }
+
+    private function internalServerError($message = 'Internal server error')
+    {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => $message]);
+        exit;
     }
 }
 
@@ -1068,9 +928,10 @@ public function handleRequest()
 // ===================================================
 try {
     $router = new APIRouter();
-    $router->handleRequest();   // echoes & exits on match
+    $router->handleRequest();
 } catch (Exception $e) {
     error_log("Fatal: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Server error occurred']);
 }
+?>

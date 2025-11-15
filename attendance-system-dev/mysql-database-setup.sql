@@ -1,7 +1,6 @@
--- Active: 1762093841339@@127.0.0.1@3306@attendance_system
 -- ===================================================
 -- Employee Attendance Management System Database
--- MySQL Version with Enhanced Features
+-- CORRECTED VERSION
 -- ===================================================
 
 CREATE DATABASE IF NOT EXISTS attendance_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -10,7 +9,7 @@ USE attendance_system;
 -- ===================================================
 -- Users/Employees Table
 -- ===================================================
-CREATE TABLE employees (
+CREATE TABLE IF NOT EXISTS employees (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -18,7 +17,7 @@ CREATE TABLE employees (
     email VARCHAR(100) UNIQUE NOT NULL,
     phone VARCHAR(20) NOT NULL,
     department ENUM('IT', 'HR', 'Surveyors', 'Accounts', 'Growth', 'Others') NOT NULL,
-    primary_office ENUM('79', '105') NOT NULL,
+    primary_office VARCHAR(10) NOT NULL,  -- <-- FIXED: Was ENUM, now VARCHAR
     role ENUM('employee', 'admin') DEFAULT 'employee',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -28,7 +27,7 @@ CREATE TABLE employees (
 -- ===================================================
 -- Office Locations Table
 -- ===================================================
-CREATE TABLE office_locations (
+CREATE TABLE IF NOT EXISTS office_locations (
     id VARCHAR(10) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     address TEXT NOT NULL,
@@ -36,32 +35,34 @@ CREATE TABLE office_locations (
     longitude DECIMAL(11, 8) NOT NULL,
     radius_meters INT DEFAULT 50,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP -- <-- FIXED: Added updated_at
 );
 
 -- ===================================================
 -- Department Office Access Table
 -- ===================================================
-CREATE TABLE department_office_access_igfk_1 (
+CREATE TABLE IF NOT EXISTS department_office_access (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    department ENUM('IT', 'HR', 'Surveyors', 'Accounts', 'Growth', 'Others') NOT NULL,
+    department ENUM('IT','HR','Surveyors','Accounts','Growth','Others') NOT NULL,
     office_id VARCHAR(10) NOT NULL,
-    FOREIGN KEY (office_id) REFERENCES office_locations(id) ON DELETE CASCADE,
+    CONSTRAINT department_office_access_office_fk
+      FOREIGN KEY (office_id) REFERENCES office_locations(id) ON DELETE CASCADE,
     UNIQUE KEY unique_dept_office (department, office_id)
 );
 
 -- ===================================================
 -- Attendance Records Table
 -- ===================================================
-CREATE TABLE attendance_records_ibfk_2 (
+CREATE TABLE IF NOT EXISTS attendance_records (
     id INT AUTO_INCREMENT PRIMARY KEY,
     employee_id INT NOT NULL,
     date DATE NOT NULL,
     check_in_time TIME NULL,
     check_out_time TIME NULL,
-    type ENUM('office', 'wfh', 'client') NOT NULL,
-    status ENUM('present', 'half_day', 'wfh', 'client', 'absent') NOT NULL,
-    office_id VARCHAR(10) NULL,
+    type ENUM('office','wfh','client') NOT NULL,
+    status ENUM('present','half_day','wfh','client','absent') NOT NULL,
+    office_id VARCHAR(10) NULL, -- <-- FIXED: Was INT, now VARCHAR
     check_in_location JSON NULL,
     check_out_location JSON NULL,
     check_in_photo LONGTEXT NULL,
@@ -71,11 +72,11 @@ CREATE TABLE attendance_records_ibfk_2 (
     notes TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
-    FOREIGN KEY (office_id) REFERENCES office_locations(id) ON DELETE SET NULL,
+    CONSTRAINT attendance_records_employee_fk
+      FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+    CONSTRAINT attendance_records_office_fk
+      FOREIGN KEY (office_id) REFERENCES office_locations(id) ON DELETE SET NULL,
     UNIQUE KEY unique_employee_date (employee_id, date),
-    
     INDEX idx_employee_date (employee_id, date),
     INDEX idx_date (date),
     INDEX idx_type (type),
@@ -83,9 +84,9 @@ CREATE TABLE attendance_records_ibfk_2 (
 );
 
 -- ===================================================
--- WFH Requests Table (for approval workflow)
+-- WFH Requests Table
 -- ===================================================
-CREATE TABLE wfh_requests (
+CREATE TABLE IF NOT EXISTS wfh_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     employee_id INT NOT NULL,
     requested_date DATE NOT NULL,
@@ -110,87 +111,36 @@ CREATE TABLE wfh_requests (
 -- Insert Default Data
 -- ===================================================
 
--- Insert Office Locations
-CREATE TABLE office_locations (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    address TEXT NOT NULL,
-    latitude DECIMAL(10, 8) NOT NULL,
-    longitude DECIMAL(11, 8) NOT NULL,
-    radius_meters INT DEFAULT 50,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-INSERT INTO office_locations (id, name, address, latitude, longitude, radius_meters, is_active) VALUES
-(79,  '79 Office',  'Sector 79, Mohali, Punjab, India', 30.680834, 76.717933, 50, 1),
-(105, '105 Office', 'Sector 105, Mohali, Punjab, India', 30.655991, 76.682795, 50, 1);
-
+-- Insert Office Locations (Using VARCHAR IDs)
+INSERT IGNORE INTO office_locations (id, name, address, latitude, longitude, radius_meters, is_active) VALUES
+('79',  '79 Office',  'Sector 79, Mohali, Punjab, India', 30.680834, 76.717933, 50, 1),
+('105', '105 Office', 'Sector 105, Mohali, Punjab, India', 30.655991, 76.682795, 50, 1);
 
 -- Insert Department Office Access Rules
-CREATE TABLE department_office_access (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    department ENUM('IT','HR','Surveyors','Accounts','Growth','Others') NOT NULL,
-    office_id INT UNSIGNED NOT NULL,
-    CONSTRAINT department_office_access_office_fk
-      FOREIGN KEY (office_id) REFERENCES office_locations(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_dept_office (department, office_id)
-);
-
-CREATE TABLE attendance_records (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    employee_id INT NOT NULL,
-    date DATE NOT NULL,
-    check_in_time TIME NULL,
-    check_out_time TIME NULL,
-    type ENUM('office','wfh','client') NOT NULL,
-    status ENUM('present','half_day','wfh','client','absent') NOT NULL,
-    office_id INT UNSIGNED NULL,
-    check_in_location JSON NULL,
-    check_out_location JSON NULL,
-    check_in_photo LONGTEXT NULL,
-    check_out_photo LONGTEXT NULL,
-    total_hours DECIMAL(4,2) DEFAULT 0.00,
-    is_half_day BOOLEAN DEFAULT FALSE,
-    notes TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT attendance_records_employee_fk
-      FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
-    CONSTRAINT attendance_records_office_fk
-      FOREIGN KEY (office_id) REFERENCES office_locations(id) ON DELETE SET NULL,
-    UNIQUE KEY unique_employee_date (employee_id, date),
-    INDEX idx_employee_date (employee_id, date),
-    INDEX idx_date (date),
-    INDEX idx_type (type),
-    INDEX idx_status (status)
-);
+INSERT IGNORE INTO department_office_access (department, office_id) VALUES
+('IT', '79'), ('IT', '105'),
+('HR', '79'), ('HR', '105'),
+('Surveyors', '79'), ('Surveyors', '105'),
+('Accounts', '79'), ('Accounts', '105'),
+('Growth', '79'), ('Growth', '105'),
+('Others', '79'), ('Others', '105');
 
 -- Insert Default Admin User
-INSERT INTO employees (username, password, name, email, phone, department, primary_office, role) VALUES
+INSERT IGNORE INTO employees (username, password, name, email, phone, department, primary_office, role) VALUES
 ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'HR', 'admin@company.com', '9999999999', 'IT', '79', 'admin');
 -- Password is: password
 
 -- Insert Sample Employees
-INSERT INTO employees (username, password, name, email, phone, department, primary_office, role) VALUES
+INSERT IGNORE INTO employees (username, password, name, email, phone, department, primary_office, role) VALUES
 ('john.doe', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'John Doe', 'john.doe@company.com', '9876543210', 'IT', '79', 'employee'),
 ('jane.smith', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jane Smith', 'jane.smith@company.com', '9876543211', 'HR', '105', 'employee'),
 ('mike.wilson', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Mike Wilson', 'mike.wilson@company.com', '9876543212', 'Surveyors', '79', 'employee'),
 ('sarah.johnson', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Sarah Johnson', 'sarah.johnson@company.com', '9876543213', 'Accounts', '105', 'employee');
 
--- Insert Sample Attendance Records
-INSERT INTO attendance_records (employee_id, date, check_in_time, check_out_time, type, status, office_id, total_hours, is_half_day) VALUES
-(2, CURDATE() - INTERVAL 1 DAY, '09:00:00', '18:00:00', 'office', 'present', '79', 9.00, FALSE),
-(3, CURDATE() - INTERVAL 1 DAY, '09:15:00', '17:45:00', 'office', 'present', '105', 8.50, FALSE),
-(4, CURDATE() - INTERVAL 1 DAY, '10:00:00', NULL, 'wfh', 'wfh', NULL, 0.00, FALSE),
-(5, CURDATE() - INTERVAL 2 DAY, '09:30:00', '16:30:00', 'office', 'half_day', '79', 7.00, TRUE);
-
 -- ===================================================
--- Create Views for Easy Data Access
+-- Create Views
 -- ===================================================
-
--- View: Employee Attendance Summary
-CREATE VIEW employee_attendance_summary AS
+CREATE OR REPLACE VIEW employee_attendance_summary AS
 SELECT 
     e.id as employee_id,
     e.name as employee_name,
@@ -210,8 +160,7 @@ LEFT JOIN attendance_records ar ON e.id = ar.employee_id
 LEFT JOIN office_locations ol ON ar.office_id = ol.id
 WHERE e.is_active = TRUE;
 
--- View: Monthly Attendance Stats
-CREATE VIEW monthly_attendance_stats AS
+CREATE OR REPLACE VIEW monthly_attendance_stats AS
 SELECT 
     employee_id,
     YEAR(date) as year,
@@ -228,11 +177,9 @@ GROUP BY employee_id, YEAR(date), MONTH(date);
 -- ===================================================
 -- Stored Procedures
 -- ===================================================
-
 DELIMITER //
 
--- Procedure: Get Accessible Offices for Department
-CREATE PROCEDURE GetAccessibleOffices(IN dept_name VARCHAR(20))
+CREATE PROCEDURE IF NOT EXISTS GetAccessibleOffices(IN dept_name VARCHAR(20))
 BEGIN
     SELECT ol.id, ol.name, ol.address, ol.latitude, ol.longitude, ol.radius_meters
     FROM office_locations ol
@@ -241,8 +188,7 @@ BEGIN
     ORDER BY ol.name;
 END //
 
--- Procedure: Check WFH Eligibility
-CREATE PROCEDURE CheckWFHEligibility(IN emp_id INT, IN check_date DATE)
+CREATE PROCEDURE IF NOT EXISTS CheckWFHEligibility(IN emp_id INT, IN check_date DATE)
 BEGIN
     DECLARE wfh_count INT DEFAULT 0;
     DECLARE monthly_limit INT DEFAULT 1;
@@ -261,8 +207,7 @@ BEGIN
         (wfh_count < monthly_limit) as can_request;
 END //
 
--- Procedure: Mark Attendance
-CREATE PROCEDURE MarkAttendance(
+CREATE PROCEDURE IF NOT EXISTS MarkAttendance(
     IN emp_id INT,
     IN att_date DATE,
     IN check_in TIME,
@@ -294,8 +239,7 @@ BEGIN
     SELECT 'Attendance marked successfully' as message, LAST_INSERT_ID() as record_id;
 END //
 
--- Procedure: Check Out
-CREATE PROCEDURE CheckOut(
+CREATE PROCEDURE IF NOT EXISTS CheckOut(
     IN emp_id INT,
     IN att_date DATE,
     IN check_out TIME,
@@ -315,13 +259,15 @@ BEGIN
     
     START TRANSACTION;
     
-    -- Calculate work hours
     SELECT 
         ROUND(TIME_TO_SEC(TIMEDIFF(check_out, check_in_time)) / 3600, 2) INTO total_hrs
     FROM attendance_records 
     WHERE employee_id = emp_id AND date = att_date;
+
+    IF total_hrs IS NULL THEN
+        SET total_hrs = 0.00;
+    END IF;
     
-    -- Determine if half day
     IF total_hrs < 8.0 THEN
         SET is_half = TRUE;
         SET new_status = 'half_day';
@@ -330,7 +276,6 @@ BEGIN
         SELECT status INTO new_status FROM attendance_records WHERE employee_id = emp_id AND date = att_date;
     END IF;
     
-    -- Update record
     UPDATE attendance_records 
     SET 
         check_out_time = check_out,
@@ -353,25 +298,14 @@ END //
 DELIMITER ;
 
 -- ===================================================
--- Create Indexes for Performance
+-- Create Indexes
 -- ===================================================
-CREATE INDEX idx_employees_username ON employees(username);
-CREATE INDEX idx_employees_email ON employees(email);
-CREATE INDEX idx_employees_department ON employees(department);
-CREATE INDEX idx_employees_active ON employees(is_active);
-
--- ===================================================
--- Grant Permissions (Optional - for specific user)
--- ===================================================
--- CREATE USER 'attendance_user'@'localhost' IDENTIFIED BY 'secure_password_123';
--- GRANT SELECT, INSERT, UPDATE, DELETE ON attendance_system.* TO 'attendance_user'@'localhost';
--- FLUSH PRIVILEGES;
+CREATE INDEX IF NOT EXISTS idx_employees_username ON employees(username);
+CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email);
+CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department);
+CREATE INDEX IF NOT EXISTS idx_employees_active ON employees(is_active);
 
 -- ===================================================
 -- Verify Installation
 -- ===================================================
 SELECT 'Database setup completed successfully!' as status;
-SELECT COUNT(*) as total_employees FROM employees;
-SELECT COUNT(*) as total_offices FROM office_locations;
-SELECT COUNT(*) as sample_records FROM attendance_records;
-
